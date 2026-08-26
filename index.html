@@ -162,9 +162,43 @@ input[type=number]{font-family:var(--mono);}
 .priority-critique{color:var(--danger);font-weight:700;}
 .priority-haute{color:var(--warn);font-weight:700;}
 .priority-moyenne{color:var(--ink-soft);font-weight:700;}
+#lockScreen{position:fixed;inset:0;background:var(--primary-dark);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;color:#fff;}
+#lockScreen.active{display:flex;}
+#lockScreen .lock-icon{font-size:48px;margin-bottom:14px;}
+#lockScreen h2{font-family:var(--serif);font-size:22px;margin:0 0 22px;font-weight:400;}
+#lockScreen .pin-dots{display:flex;gap:14px;margin-bottom:26px;}
+#lockScreen .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.5);transition:.15s;}
+#lockScreen .pin-dot.filled{background:#fff;border-color:#fff;}
+#lockScreen .pin-pad{display:grid;grid-template-columns:repeat(3,64px);gap:14px;}
+#lockScreen .pin-key{width:64px;height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-size:22px;font-family:var(--mono);cursor:pointer;}
+#lockScreen .pin-key:active{background:rgba(255,255,255,.22);}
+#lockScreen .pin-key.wide{border-radius:32px;font-size:13px;width:64px;}
+#lockScreen .pin-error{color:#F3A79A;font-size:13px;margin-top:14px;min-height:18px;}
 </style>
 </head>
 <body>
+
+<div id="lockScreen">
+  <div class="lock-icon">🔒</div>
+  <h2>Entrez votre code PIN</h2>
+  <div class="pin-dots" id="pinDots"></div>
+  <div class="pin-pad" id="pinPad">
+    <button class="pin-key" data-key="1">1</button>
+    <button class="pin-key" data-key="2">2</button>
+    <button class="pin-key" data-key="3">3</button>
+    <button class="pin-key" data-key="4">4</button>
+    <button class="pin-key" data-key="5">5</button>
+    <button class="pin-key" data-key="6">6</button>
+    <button class="pin-key" data-key="7">7</button>
+    <button class="pin-key" data-key="8">8</button>
+    <button class="pin-key" data-key="9">9</button>
+    <button class="pin-key wide" data-key="clear">Effacer</button>
+    <button class="pin-key" data-key="0">0</button>
+    <button class="pin-key wide" data-key="back">⌫</button>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+</div>
+
 
 <header class="top">
   <div class="brand">
@@ -256,6 +290,18 @@ input[type=number]{font-family:var(--mono);}
       </div>
       <button class="btn" id="paramSave">Enregistrer les paramètres</button>
       <p class="small-note">💡 Modifiez les % ci-dessus (ils doivent totaliser 100%). Les montants budgétaires dans toutes les feuilles s'actualisent automatiquement.</p>
+    </div>
+
+    <div class="section-title">🔒 Sécurité</div>
+    <div class="card">
+      <p class="small-note" style="margin-top:0">Protège l'ouverture de l'application par un code à 4-6 chiffres. Le code n'est jamais stocké en clair (seule une empreinte cryptographique est conservée). <b>Attention : il n'existe aucune récupération en cas d'oubli</b> — tu devras réinitialiser tes données via l'onglet Paramètres avancés si tu perds ton code.</p>
+      <div id="pinStatusText" class="small-note" style="font-weight:700;color:var(--ink)"></div>
+      <div class="two-col-form" style="margin-top:10px">
+        <div class="field"><label>Nouveau code PIN (4-6 chiffres)</label><input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="paramPinNew" placeholder="••••"></div>
+        <div class="field"><label>Confirmer le code PIN</label><input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="paramPinConfirm" placeholder="••••"></div>
+      </div>
+      <button class="btn" id="paramPinSave">Activer / modifier le code PIN</button>
+      <button class="btn secondary" id="paramPinRemove">Retirer le code PIN</button>
     </div>
 
     <div class="section-title">🔀 Réagencement des menus</div>
@@ -1102,6 +1148,48 @@ function pct(n){ return (Math.round((n||0)*1000)/10)+'%'; }
 function escapeHtml(s){
   return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function requireUnlock(){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('lockScreen');
+    const dotsEl = document.getElementById('pinDots');
+    const errEl = document.getElementById('pinError');
+    const pad = document.getElementById('pinPad');
+    overlay.classList.add('active');
+    let entered = '';
+    const targetLen = state.settings.pinLength || 4;
+    function renderDots(){
+      dotsEl.innerHTML = Array.from({length:targetLen}).map((_,i)=>`<span class="pin-dot ${i<entered.length?'filled':''}"></span>`).join('');
+    }
+    renderDots();
+    async function tryUnlock(){
+      const hash = await sha256Hex(entered);
+      if(hash === state.settings.pinHash){
+        overlay.classList.remove('active');
+        pad.removeEventListener('click', onKey);
+        resolve();
+      } else {
+        errEl.textContent = 'Code incorrect';
+        entered='';
+        renderDots();
+        setTimeout(()=>{errEl.textContent='';}, 1500);
+      }
+    }
+    function onKey(e){
+      const btn = e.target.closest('.pin-key'); if(!btn) return;
+      const k = btn.dataset.key;
+      if(k==='clear'){ entered=''; renderDots(); return; }
+      if(k==='back'){ entered = entered.slice(0,-1); renderDots(); return; }
+      if(entered.length<targetLen){ entered += k; renderDots(); }
+      if(entered.length===targetLen){ tryUnlock(); }
+    }
+    pad.addEventListener('click', onKey);
+  });
+}
 function devise(){ return (state.settings&&state.settings.devise)||'FCFA'; }
 function updateCurrencyLabels(){
   document.querySelectorAll('.cur-label').forEach(el=>{ el.textContent = devise(); });
@@ -1798,6 +1886,7 @@ function renderParametres(){
   document.getElementById('paramTolerance').value = s.tolerance;
   document.getElementById('paramMoisUrgence').value = s.moisFondsUrgence;
   document.getElementById('paramTauxEndett').value = s.tauxEndettMax;
+  document.getElementById('pinStatusText').textContent = s.pinHash ? '✅ Code PIN activé (' + s.pinLength + ' chiffres)' : '◻️ Aucun code PIN défini — application non verrouillée';
 
   document.getElementById('paramAllocBody').querySelectorAll('[data-alloc]').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
@@ -1815,8 +1904,27 @@ document.getElementById('paramSave').addEventListener('click', async ()=>{
   state.settings.tauxEndettMax = Number(document.getElementById('paramTauxEndett').value||0.33);
   await persist(); renderAll();
 });
-
-/* ======================= MULTI-CREDITS ======================= */
+document.getElementById('paramPinSave').addEventListener('click', async ()=>{
+  const p1 = document.getElementById('paramPinNew').value.trim();
+  const p2 = document.getElementById('paramPinConfirm').value.trim();
+  if(!/^[0-9]{4,6}$/.test(p1)){ alert('Le code PIN doit contenir 4 à 6 chiffres.'); return; }
+  if(p1 !== p2){ alert('Les deux codes saisis ne correspondent pas.'); return; }
+  state.settings.pinHash = await sha256Hex(p1);
+  state.settings.pinLength = p1.length;
+  await persist();
+  document.getElementById('paramPinNew').value='';
+  document.getElementById('paramPinConfirm').value='';
+  renderParametres();
+  alert('Code PIN activé. Il sera demandé au prochain lancement de l\'application.');
+});
+document.getElementById('paramPinRemove').addEventListener('click', async ()=>{
+  if(!state.settings.pinHash){ return; }
+  if(!confirm('Retirer le code PIN de verrouillage ?')) return;
+  delete state.settings.pinHash;
+  delete state.settings.pinLength;
+  await persist();
+  renderParametres();
+});
 function computeMultiCreditsRows(){
   const remboursements = state.transactions.filter(t=>t.categorie==='Remboursement crédit bancaire');
   return state.multiCredits.map(c=>{
@@ -2610,6 +2718,9 @@ function renderAll(){
 /* ======================= INIT ======================= */
 (async function init(){
   await loadState();
+  if(state.settings && state.settings.pinHash){
+    await requireUnlock();
+  }
   initFilters();
   populateTxSelects();
   document.getElementById('targetConstruction').value = state.targets.construction;
