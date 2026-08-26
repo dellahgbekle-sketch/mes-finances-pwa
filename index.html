@@ -1,0 +1,2624 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mes Finances</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F5C4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mes Finances">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="./vendor/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F6F7F3;
+  --surface:#FFFFFF;
+  --ink:#16241D;
+  --ink-soft:#5B6B62;
+  --line:#E1E4DC;
+  --primary:#1F5C4A;
+  --primary-dark:#153F32;
+  --gold:#B9903F;
+  --besoins:#2E6F8E;
+  --epargne:#1F5C4A;
+  --desirs:#B5533C;
+  --invest:#6B5B95;
+  --revenu:#2E7D4F;
+  --danger:#B23A2E;
+  --danger-bg:#FBEAE7;
+  --success:#2E7D4F;
+  --success-bg:#EAF3EC;
+  --warn:#B9903F;
+  --warn-bg:#FBF3E3;
+  --radius:10px;
+  --serif:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+  --sans:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+.app{max-width:1180px;margin:0 auto;padding:0 20px 60px;}
+header.top{
+  padding:28px 20px 0;
+  max-width:1180px;margin:0 auto;
+}
+.brand{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:16px;}
+.brand h1{font-family:var(--serif);font-size:26px;margin:0;letter-spacing:.2px;}
+.brand .rule{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.5px;text-transform:uppercase;}
+.brand .rule b{color:var(--ink);}
+
+nav.tabs{display:flex;gap:4px;margin-top:18px;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+nav.tabs button{
+  background:none;border:none;padding:10px 14px;font-family:var(--sans);font-size:13.5px;font-weight:600;
+  color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap;
+}
+nav.tabs button:hover{color:var(--ink);}
+nav.tabs button.active{color:var(--primary-dark);border-bottom-color:var(--primary);}
+.nav-badge{display:inline-block;background:var(--danger);color:#fff;border-radius:10px;padding:1px 6px;
+  font-size:10.5px;font-weight:700;margin-left:5px;vertical-align:2px;}
+
+.filters{display:flex;gap:14px;align-items:center;margin:18px 0 4px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft)}
+.filters select{font-family:var(--sans);padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:13px;color:var(--ink)}
+.filters label{font-weight:600;}
+
+.panel{display:none;margin-top:18px;}
+.panel.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:560px){.grid4{grid-template-columns:1fr}}
+
+.block-card{border-left:4px solid var(--besoins);}
+.block-card.epargne{border-left-color:var(--epargne);}
+.block-card.desirs{border-left-color:var(--desirs);}
+.block-card.invest{border-left-color:var(--invest);}
+.block-card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);font-weight:700;}
+.block-card .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--ink-soft);}
+.block-card .row b{color:var(--ink);font-family:var(--mono);}
+.block-card .pct{font-family:var(--mono);font-size:26px;font-weight:700;margin:6px 0 2px;color:var(--ink);}
+.bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px;}
+.bar>span{display:block;height:100%;background:var(--besoins);}
+.epargne .bar>span{background:var(--epargne)}
+.desirs .bar>span{background:var(--desirs)}
+.invest .bar>span{background:var(--invest)}
+
+.section-title{font-family:var(--serif);font-size:19px;margin:26px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line);}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:8px 10px;background:var(--bg);color:var(--ink-soft);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.3px;border-bottom:1px solid var(--line);position:sticky;top:0;}
+td{padding:8px 10px;border-bottom:1px solid var(--line);}
+tr:last-child td{border-bottom:none;}
+td.num,th.num{text-align:right;font-family:var(--mono);}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);}
+.tbl-wrap.scroll-y{max-height:420px;overflow-y:auto;}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:700;}
+.badge.ok{background:var(--success-bg);color:var(--success);}
+.badge.bad{background:var(--danger-bg);color:var(--danger);}
+.badge.warn{background:var(--warn-bg);color:var(--warn);}
+
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;letter-spacing:.3px;}
+.tag.BESOINS{background:var(--besoins);}
+.tag.EPARGNE{background:var(--epargne);}
+.tag.DESIRS{background:var(--desirs);}
+.tag.INVEST{background:var(--invest);}
+.tag.REVENU{background:var(--revenu);}
+
+form.tx-form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+form.tx-form .full{grid-column:1/-1;}
+@media(max-width:800px){form.tx-form{grid-template-columns:repeat(2,1fr)}}
+form.tx-form label{font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px;}
+form.tx-form input,form.tx-form select,form.tx-form textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-family:var(--sans);font-size:13.5px;background:var(--surface);color:var(--ink);
+}
+form.tx-form textarea{resize:vertical;min-height:38px;}
+
+.btn{
+  background:var(--primary);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-weight:700;
+  font-size:13.5px;cursor:pointer;font-family:var(--sans);transition:.15s;
+}
+.btn:hover{background:var(--primary-dark);}
+.btn.secondary{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
+.btn.secondary:hover{color:var(--ink);border-color:var(--ink-soft);}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger);padding:4px 10px;font-size:12px;}
+.btn.danger:hover{background:var(--danger-bg);}
+.btn.small{padding:4px 10px;font-size:12px;}
+
+.charts-row{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;margin-top:16px;}
+@media(max-width:900px){.charts-row{grid-template-columns:1fr}}
+.chart-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+.chart-box h4{margin:0 0 10px;font-size:13px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}
+canvas{max-height:260px;}
+
+.kpi{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px dashed var(--line);}
+.kpi:last-child{border:none;}
+.kpi .label{font-size:13px;color:var(--ink-soft);}
+.kpi .value{font-family:var(--mono);font-weight:700;font-size:16px;}
+.kpi .value.neg{color:var(--danger);}
+.kpi .value.pos{color:var(--success);}
+
+.empty{padding:30px;text-align:center;color:var(--ink-soft);font-size:13.5px;}
+.subgroup-row td{background:var(--bg);font-weight:700;}
+input[type=number]{font-family:var(--mono);}
+.small-note{font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
+.two-col-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:700px){.two-col-form{grid-template-columns:1fr}}
+.field{margin-bottom:10px;}
+.field label{font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px;}
+.field input, .field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-family:var(--sans);font-size:13.5px;}
+.save-msg{font-size:12px;color:var(--success);margin-left:10px;opacity:0;transition:opacity .3s;}
+.save-msg.show{opacity:1;}
+.principle{padding:10px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+.principle:last-child{border:none;}
+.principle b{color:var(--primary-dark);}
+.priority-critique{color:var(--danger);font-weight:700;}
+.priority-haute{color:var(--warn);font-weight:700;}
+.priority-moyenne{color:var(--ink-soft);font-weight:700;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>💰 Mes Finances Personnelles<span id="headerUserName"></span></h1>
+    <div class="rule" id="ruleHeader">Règle <b>50</b> Besoins · <b>20</b> Épargne · <b>20</b> Désirs · <b>10</b> Invest. — <span class="cur-label">FCFA</span></div>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+
+<div class="app">
+
+  <div class="filters">
+    <label>Année</label>
+    <input type="number" id="filterYear" list="yearOptions" min="2000" max="2100" step="1" style="width:90px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:13px;color:var(--ink);font-family:var(--mono)">
+    <datalist id="yearOptions"></datalist>
+    <label>Mois</label>
+    <select id="filterMonth">
+      <option value="all">Tous les mois</option>
+    </select>
+    <span class="save-msg" id="saveMsg">✓ enregistré</span>
+  </div>
+
+  <!-- DASHBOARD -->
+  <section class="panel active" id="panel-dashboard">
+    <div class="grid4" id="dashBlocks"></div>
+
+    <div class="charts-row">
+      <div class="chart-box">
+        <h4>Répartition Budget vs Réalisé</h4>
+        <canvas id="chartRepartition"></canvas>
+      </div>
+      <div class="chart-box">
+        <h4>Évolution mensuelle — Revenus / Dépenses</h4>
+        <canvas id="chartEvolution"></canvas>
+      </div>
+    </div>
+
+    <div class="section-title">Synthèse financière</div>
+    <div class="grid4">
+      <div class="card"><div class="kpi"><span class="label">Total dépenses</span><span class="value" id="kpiDepenses">—</span></div></div>
+      <div class="card"><div class="kpi"><span class="label">Total revenus</span><span class="value" id="kpiRevenus">—</span></div></div>
+      <div class="card"><div class="kpi"><span class="label">Solde net</span><span class="value" id="kpiSolde">—</span></div></div>
+      <div class="card"><div class="kpi"><span class="label">Taux d'épargne</span><span class="value" id="kpiTauxEpargne">—</span></div></div>
+    </div>
+
+    <div class="section-title">Détail revenus de la période</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Source de revenu</th><th class="num">Prévu (<span class="cur-label">FCFA</span>)</th><th class="num">Réalisé (<span class="cur-label">FCFA</span>)</th><th class="num">Écart</th></tr></thead>
+        <tbody id="dashRevenusBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PARAMETRES -->
+  <section class="panel" id="panel-parametres">
+    <p class="small-note">Les % d'allocation pilotent la règle budgétaire dans tout le classeur (Tableau de bord, Budget mensuel, Alertes…). Le total doit faire 100%.</p>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">📊 Règle de répartition budgétaire</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Catégorie</th><th class="num">Allocation %</th><th class="num">Montant mensuel (auto)</th><th>Description</th></tr></thead>
+          <tbody id="paramAllocBody"></tbody>
+          <tfoot><tr id="paramAllocTotal" style="font-weight:700;background:var(--bg)"></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-title">👤 Paramètres personnels</div>
+    <div class="card">
+      <div class="two-col-form">
+        <div class="field"><label>Nom / Prénom</label><input type="text" id="paramNom" placeholder="À remplir"></div>
+        <div class="field"><label>Devise</label>
+          <select id="paramDevise">
+            <option value="FCFA">FCFA (XOF — UEMOA)</option>
+            <option value="FCFA (XAF)">FCFA (XAF — CEMAC)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="USD">USD ($)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="MAD">MAD (Dirham)</option>
+            <option value="NGN">NGN (Naira)</option>
+            <option value="GHS">GHS (Cedi)</option>
+            <option value="CAD">CAD ($)</option>
+          </select>
+        </div>
+        <div class="field"><label>Tolérance dépassement %</label><input type="number" step="0.01" id="paramTolerance"></div>
+        <div class="field"><label>Mois fonds urgence cible</label><input type="number" id="paramMoisUrgence"></div>
+        <div class="field"><label>Taux endettement max</label><input type="number" step="0.01" id="paramTauxEndett"></div>
+      </div>
+      <button class="btn" id="paramSave">Enregistrer les paramètres</button>
+      <p class="small-note">💡 Modifiez les % ci-dessus (ils doivent totaliser 100%). Les montants budgétaires dans toutes les feuilles s'actualisent automatiquement.</p>
+    </div>
+
+    <div class="section-title">🔀 Réagencement des menus</div>
+    <div class="card">
+      <p class="small-note" style="margin-top:0">Réorganisez l'ordre d'affichage des 16 onglets dans la barre de navigation à l'aide des flèches ▲ ▼.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="width:50px">Ordre</th><th>Onglet</th><th style="width:110px"></th></tr></thead>
+          <tbody id="tabOrderBody"></tbody>
+        </table>
+      </div>
+      <button class="btn secondary" id="tabOrderReset" style="margin-top:10px">Réinitialiser l'ordre par défaut</button>
+    </div>
+
+    <div class="section-title">💾 Sauvegarde & Synchronisation multi-appareils</div>
+    <div class="card">
+      <p class="small-note" style="margin-top:0">
+        Vos données sont enregistrées automatiquement dans <b>ce navigateur, sur cet appareil</b>. Pour les retrouver sur un autre
+        ordinateur ou navigateur, ou pour vous constituer une sauvegarde de sécurité, exportez un fichier puis importez-le à l'endroit voulu.
+      </p>
+      <div class="two-col-form">
+        <div>
+          <button class="btn" id="exportDataBtn" style="width:100%">📤 Exporter mes données (.json)</button>
+          <p class="small-note">Télécharge un fichier contenant l'intégralité de vos données (transactions, budgets, crédits, objectifs…).</p>
+        </div>
+        <div>
+          <button class="btn secondary" id="importDataBtn" style="width:100%">📥 Importer une sauvegarde (.json)</button>
+          <input type="file" id="importDataInput" accept="application/json,.json" style="display:none">
+          <p class="small-note">⚠️ Remplace <b>toutes</b> les données actuellement enregistrées sur cet appareil par celles du fichier importé.</p>
+        </div>
+      </div>
+      <p class="small-note" style="margin-top:10px">
+        💡 <b>Astuce multi-appareils</b> : enregistrez votre export dans un dossier synchronisé (Google Drive, Dropbox, OneDrive…).
+        Il vous suffira ensuite d'un clic sur "Importer" depuis chaque appareil pour retrouver vos dernières données.
+      </p>
+      <span class="save-msg" id="importMsg" style="display:block;margin-top:8px">✓ Données importées avec succès</span>
+    </div>
+  </section>
+
+  <!-- TRANSACTIONS -->
+  <section class="panel" id="panel-transactions">
+    <div class="card">
+      <div class="section-title" style="margin-top:0" id="txFormTitle">Nouvelle transaction</div>
+      <form class="tx-form" id="txForm">
+        <div><label>Date</label><input type="date" id="txDate" required></div>
+        <div><label>Montant (<span class="cur-label">FCFA</span>)</label><input type="number" id="txMontant" min="0" step="1" required></div>
+        <div><label>Catégorie</label><select id="txCategorie" required></select></div>
+        <div><label>Type 50/20/20/10</label><select id="txType" disabled></select></div>
+        <div class="full"><label>Description</label><input type="text" id="txDescription" placeholder="Ex : Loyer janvier"></div>
+        <div><label>Mode de paiement</label>
+          <select id="txMode">
+            <option>Espèces</option><option>Virement</option><option>Mobile Money</option><option>CB</option><option>Chèque</option><option>Autre</option>
+          </select>
+        </div>
+        <div><label>Référence</label><input type="text" id="txReference" placeholder="Ex : LOY-002"></div>
+        <div class="full"><label>Notes</label><input type="text" id="txNotes"></div>
+        <div class="full" style="display:flex;gap:10px;align-items:center">
+          <button type="submit" class="btn" id="txSubmitBtn">+ Ajouter la transaction</button>
+          <button type="button" class="btn secondary" id="txCancelEdit" style="display:none">Annuler la modification</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="section-title">Historique des transactions</div>
+    <div class="filters" style="margin-top:0">
+      <label>Filtrer catégorie</label>
+      <select id="txFilterCat"><option value="all">Toutes</option></select>
+      <label>Filtrer type</label>
+      <select id="txFilterType">
+        <option value="all">Tous</option>
+        <option value="BESOINS">Besoins</option>
+        <option value="EPARGNE">Épargne</option>
+        <option value="DESIRS">Désirs</option>
+        <option value="INVEST">Invest.</option>
+      </select>
+    </div>
+    <div class="tbl-wrap scroll-y">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Description</th><th>Catégorie</th><th>Type</th><th class="num">Montant</th><th>Mode</th><th>Référence</th><th></th>
+        </tr></thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- BUDGET MENSUEL -->
+  <section class="panel" id="panel-budget">
+    <p class="small-note">Le budget prévu est modifiable par poste. Le réalisé est calculé automatiquement depuis vos transactions pour la période sélectionnée en haut de page.</p>
+    <div id="budgetGroups"></div>
+  </section>
+
+  <!-- REVENUS -->
+  <section class="panel" id="panel-revenus">
+    <p class="small-note">Suivi par source de revenu. Le "Réalisé" est calculé depuis les revenus saisis ci-dessous pour chaque mois de l'année sélectionnée en haut de page.</p>
+    <div class="tbl-wrap">
+      <table id="revenusTable">
+        <thead><tr>
+          <th>Source</th><th class="num">Jan</th><th class="num">Fév</th><th class="num">Mar</th><th class="num">Avr</th><th class="num">Mai</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Aoû</th><th class="num">Sep</th><th class="num">Oct</th><th class="num">Nov</th><th class="num">Déc</th><th class="num">Total</th><th class="num">Prévision/mois</th>
+        </tr></thead>
+        <tbody id="revenusBody"></tbody>
+        <tfoot id="revenusFoot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- CREDIT BANCAIRE -->
+  <section class="panel" id="panel-credit">
+    <div class="grid2">
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Paramètres du crédit</div>
+        <div class="field"><label>Type de crédit</label><input type="text" id="crType"></div>
+        <div class="field"><label>Référence du crédit</label><input type="text" id="crReference" placeholder="Ex : CRED-PRINC-01"></div>
+        <div class="field"><label>Montant emprunté (<span class="cur-label">FCFA</span>)</label><input type="number" id="crMontant"></div>
+        <div class="field"><label>Taux d'intérêt annuel (%)</label><input type="number" step="0.01" id="crTaux"></div>
+        <div class="field"><label>Durée (mois)</label><input type="number" id="crDuree"></div>
+        <div class="field"><label>Date de 1ère mensualité</label><input type="date" id="crDate"></div>
+        <button class="btn" id="crSave">Enregistrer</button>
+        <p class="small-note">💡 Renseignez cette référence dans le champ "Référence" d'une transaction de catégorie "Remboursement crédit bancaire" pour la lier précisément à ce crédit (utile si vous avez plusieurs crédits).</p>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Synthèse calculée</div>
+        <div id="crSynthese"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Suivi réel vs théorique (à ce jour)</div>
+    <div class="grid4" id="crSuivi"></div>
+
+    <div class="section-title">Tableau d'amortissement</div>
+    <div class="tbl-wrap scroll-y">
+      <table>
+        <thead><tr><th>Mois #</th><th>Date</th><th class="num">Capital dû (début)</th><th class="num">Mensualité</th><th class="num">Intérêts</th><th class="num">Capital remboursé</th><th class="num">Capital dû (fin)</th></tr></thead>
+        <tbody id="crAmort"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- MULTI-CREDITS -->
+  <section class="panel" id="panel-multicredits">
+    <p class="small-note">Vue consolidée de tous vos engagements de crédit (jusqu'à 5). Renseignez chaque crédit ; la mensualité (PMT) et le coût total sont calculés automatiquement.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Intitulé</th><th>Référence</th><th class="num">Montant initial</th><th class="num">Capital restant dû</th><th class="num">Taux annuel</th><th class="num">Mensualité</th><th class="num">Réel payé</th><th class="num">Mois restants</th><th class="num">Coût total</th><th class="num">Coût intérêts</th><th>Statut</th></tr></thead>
+        <tbody id="mcBody"></tbody>
+        <tfoot id="mcFoot"></tfoot>
+      </table>
+    </div>
+    <div class="section-title">Taux d'endettement global</div>
+    <div class="card" id="mcEndettement"></div>
+
+    <div class="section-title">🧊➡️🔥 Stratégie de remboursement Avalanche</div>
+    <p class="small-note">Priorise le remboursement des crédits par taux d'intérêt décroissant : tout effort supplémentaire est dirigé vers le crédit le plus coûteux, ce qui minimise le total des intérêts payés. Combine automatiquement le Crédit bancaire et les Multi-Crédits actifs.</p>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Priorité</th><th>Crédit</th><th class="num">Taux annuel</th><th class="num">Capital restant</th><th class="num">Mensualité min.</th></tr></thead>
+          <tbody id="avalancheOrderBody"></tbody>
+        </table>
+      </div>
+      <div class="two-col-form" style="margin-top:14px">
+        <div class="field"><label>Effort mensuel supplémentaire disponible (<span class="cur-label">FCFA</span>)</label><input type="number" id="avalancheExtra" value="0" min="0"></div>
+      </div>
+      <button class="btn" id="avalancheSimulate">Simuler la stratégie Avalanche</button>
+      <div id="avalancheResult" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- INVESTISSEMENTS -->
+  <section class="panel" id="panel-investissements">
+    <p class="small-note">Le "Réalisé" est calculé automatiquement depuis vos transactions correspondant à chaque désignation. Le "Budget prévu", "Priorité", "Payé ?" et "Urgent ?" sont modifiables.</p>
+    <div id="investGroups"></div>
+
+    <div class="section-title">🏗️ Projet construction maison — Épargne par dépôt mensuel</div>
+    <div class="grid2">
+      <div class="card">
+        <div class="field"><label>Coût total estimé du projet (<span class="cur-label">FCFA</span>)</label><input type="number" id="cstCout"></div>
+        <div class="field"><label>Date de début de l'épargne</label><input type="date" id="cstDate"></div>
+        <div class="field"><label>Dépôt mensuel cible (<span class="cur-label">FCFA</span>)</label><input type="number" id="cstDepot"></div>
+        <button class="btn" id="cstSave">Enregistrer</button>
+      </div>
+      <div class="card" id="cstSuivi"></div>
+    </div>
+  </section>
+
+  <!-- MAINTENANCE -->
+  <section class="panel" id="panel-maintenance">
+    <p class="small-note">Suivi maintenance & réparations des équipements. La prochaine échéance et le statut sont calculés automatiquement.</p>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">+ Nouvel équipement à suivre</div>
+      <form class="tx-form" id="maintForm">
+        <div><label>Équipement</label><input type="text" id="maintNom" required placeholder="Ex : Voiture (vidange)"></div>
+        <div><label>Catégorie</label><input type="text" id="maintCategorie" placeholder="Véhicule, Logement…"></div>
+        <div><label>Mode de suivi</label>
+          <select id="maintMode">
+            <option value="temps">📅 Par temps (mois)</option>
+            <option value="km">🚗 Par kilométrage (véhicules)</option>
+          </select>
+        </div>
+        <div id="maintTempsFields"><label>Intervalle (mois)</label><input type="number" id="maintIntervalle" value="12" min="1"></div>
+        <div id="maintKmFields1" style="display:none"><label>Intervalle (km)</label><input type="number" id="maintIntervalleKm" value="10000" min="1"></div>
+        <div><label>Dernière maintenance</label><input type="date" id="maintDerniere"></div>
+        <div id="maintKmFields2" style="display:none"><label>Kilométrage à la dernière maintenance</label><input type="number" id="maintKmDerniere" value="0" min="0"></div>
+        <div id="maintKmFields3" style="display:none"><label>Kilométrage actuel</label><input type="number" id="maintKmActuel" value="0" min="0"></div>
+        <div><label>Coût estimé (<span class="cur-label">FCFA</span>)</label><input type="number" id="maintCoutEstime" value="0"></div>
+        <div><label>Responsable</label><input type="text" id="maintResponsable"></div>
+        <div class="full"><label>Notes</label><input type="text" id="maintNotes"></div>
+        <div class="full"><button type="submit" class="btn">+ Ajouter</button></div>
+      </form>
+    </div>
+    <div class="section-title">Suivi des équipements</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Équipement</th><th>Catégorie</th><th>Suivi</th><th class="num">Intervalle</th><th>Dernière</th><th>Prochaine échéance</th><th class="num">Restant</th><th>Statut</th><th class="num">Coût estimé</th><th class="num">Coût réel</th><th>Responsable</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="maintBody"></tbody>
+      </table>
+    </div>
+    <div class="section-title">📊 Récapitulatif</div>
+    <div class="grid4" id="maintRecap"></div>
+  </section>
+
+  <!-- OBJECTIFS EPARGNE -->
+  <section class="panel" id="panel-objectifs">
+    <p class="small-note">Suivi de vos objectifs d'épargne avec progression visuelle. "Épargné à ce jour" est calculé depuis vos transactions de la catégorie liée (si renseignée), sinon modifiable manuellement.</p>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">+ Nouvel objectif</div>
+      <form class="tx-form" id="objForm">
+        <div><label>Objectif</label><input type="text" id="objNom" required placeholder="Ex : Fonds d'urgence"></div>
+        <div><label>Catégorie (libellé libre)</label><input type="text" id="objCategorie" placeholder="Sécurité, Loisirs…"></div>
+        <div><label>Catégorie liée (auto) — optionnel</label>
+          <select id="objCategorieLiee"><option value="">— Aucune (saisie manuelle) —</option></select>
+        </div>
+        <div><label>Montant cible (<span class="cur-label">FCFA</span>)</label><input type="number" id="objMontantCible" required></div>
+        <div><label>Épargné à ce jour (<span class="cur-label">FCFA</span>)</label><input type="number" id="objEpargneManuel" value="0"></div>
+        <div><label>Date cible</label><input type="date" id="objDateCible"></div>
+        <div><label>Priorité</label>
+          <select id="objPriorite"><option>🔴 Critique</option><option>🔶 Haute</option><option selected>🟡 Moyenne</option></select>
+        </div>
+        <div class="full"><label>Note</label><input type="text" id="objNote"></div>
+        <div class="full"><button type="submit" class="btn">+ Ajouter l'objectif</button></div>
+      </form>
+    </div>
+    <div class="section-title">Vos objectifs</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Objectif</th><th>Catégorie</th><th class="num">Cible</th><th class="num">Épargné</th><th class="num">Reste</th><th>% Atteint</th><th>Jauge</th><th>Date cible</th><th class="num">Dépôt/mois nécessaire</th><th>Statut</th><th>Priorité</th><th></th></tr></thead>
+        <tbody id="objBody"></tbody>
+        <tfoot id="objFoot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- PATRIMOINE NET -->
+  <section class="panel" id="panel-patrimoine">
+    <p class="small-note">Actifs − Passifs = Situation nette. Le passif "Crédit bancaire principal" reprend automatiquement le capital restant dû de l'onglet Crédit bancaire.</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="section-title" style="margin-top:0">💚 Actifs — Ce que vous possédez</div>
+        <form class="tx-form" id="actifForm" style="margin-bottom:10px">
+          <div><label>Actif</label><input type="text" id="actifNom" required placeholder="Ex : Solde bancaire"></div>
+          <div><label>Catégorie</label>
+            <select id="actifCategorie">
+              <option>Liquidités</option><option>Immobilier</option><option>Placements</option><option>Biens</option><option>Divers</option>
+            </select>
+          </div>
+          <div class="full"><label>Valeur actuelle (<span class="cur-label">FCFA</span>)</label><input type="number" id="actifValeur" required></div>
+          <div class="full"><button type="submit" class="btn small">+ Ajouter</button></div>
+        </form>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Actif</th><th>Catégorie</th><th class="num">Valeur</th><th></th></tr></thead>
+          <tbody id="actifsBody"></tbody>
+          <tfoot id="actifsFoot"></tfoot>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-top:0">🔴 Passifs — Ce que vous devez</div>
+        <form class="tx-form" id="passifForm" style="margin-bottom:10px">
+          <div><label>Passif</label><input type="text" id="passifNom" required placeholder="Ex : Autres dettes"></div>
+          <div><label>Catégorie</label>
+            <select id="passifCategorie">
+              <option>Crédit</option><option>Divers</option>
+            </select>
+          </div>
+          <div class="full"><label>Montant restant dû (<span class="cur-label">FCFA</span>)</label><input type="number" id="passifValeur" required></div>
+          <div class="full"><button type="submit" class="btn small">+ Ajouter</button></div>
+        </form>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Passif</th><th>Catégorie</th><th class="num">Montant</th><th></th></tr></thead>
+          <tbody id="passifsBody"></tbody>
+          <tfoot id="passifsFoot"></tfoot>
+        </table></div>
+      </div>
+    </div>
+    <div class="section-title">📋 Bilan par catégorie</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Catégorie Actifs</th><th class="num">Montant</th><th>Catégorie Passifs</th><th class="num">Montant</th></tr></thead>
+      <tbody id="bilanBody"></tbody>
+    </table></div>
+    <div class="section-title">💎 Patrimoine net</div>
+    <div class="card" id="patrimoineNetCard"></div>
+  </section>
+
+  <!-- PROJECTION FINANCIERE -->
+  <section class="panel" id="panel-projection">
+    <p class="small-note">Simulation sur 12 / 24 / 36 mois selon vos hypothèses de croissance et d'inflation.</p>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">⚙️ Hypothèses de projection</div>
+      <div class="two-col-form">
+        <div class="field"><label>Revenu mensuel de départ (<span class="cur-label">FCFA</span>)</label><input type="number" id="projRevenu"></div>
+        <div class="field"><label>Taux de croissance revenu / mois</label><input type="number" step="0.001" id="projCroissance"></div>
+        <div class="field"><label>Taux d'inflation des charges / mois</label><input type="number" step="0.001" id="projInflation"></div>
+        <div class="field"><label>Taux de rendement épargne / mois</label><input type="number" step="0.001" id="projRendement"></div>
+        <div class="field"><label>Horizon de projection (mois)</label>
+          <select id="projHorizon"><option value="12">12</option><option value="24">24</option><option value="36" selected>36</option></select>
+        </div>
+      </div>
+      <button class="btn" id="projSave">Recalculer la projection</button>
+      <p class="small-note">Le crédit mensuel (tous crédits) est repris automatiquement des onglets Crédit bancaire + Multi-Crédits.</p>
+    </div>
+    <div class="tbl-wrap scroll-y">
+      <table>
+        <thead><tr><th>Mois</th><th>Date</th><th class="num">Revenu prévu</th><th class="num">Besoins</th><th class="num">Épargne</th><th class="num">Désirs</th><th class="num">Invest.</th><th class="num">Crédit</th><th class="num">Total charges</th><th class="num">Solde mensuel</th><th class="num">Cumul épargne</th><th class="num">Patrimoine net proj.</th><th>Statut</th></tr></thead>
+        <tbody id="projBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SUIVI ANNUEL -->
+  <section class="panel" id="panel-annuel">
+    <p class="small-note">Toutes les valeurs sont calculées automatiquement depuis vos transactions et revenus, pour l'année sélectionnée en haut de page.</p>
+    <div class="tbl-wrap">
+      <table id="annuelTable">
+        <thead><tr>
+          <th>Catégorie</th><th class="num">Jan</th><th class="num">Fév</th><th class="num">Mar</th><th class="num">Avr</th><th class="num">Mai</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Aoû</th><th class="num">Sep</th><th class="num">Oct</th><th class="num">Nov</th><th class="num">Déc</th><th class="num">Total</th>
+        </tr></thead>
+        <tbody id="annuelBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ALERTES -->
+  <section class="panel" id="panel-alertes">
+    <p class="small-note">Indicateurs recalculés automatiquement selon la période sélectionnée en haut de page.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Indicateur</th><th class="num">Valeur</th><th class="num">Seuil cible</th><th>Statut</th><th>Priorité</th><th>Recommandation</th></tr></thead>
+        <tbody id="alertesBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Objectifs personnalisés</div>
+    <div class="grid2">
+      <div class="card">
+        <p class="small-note" style="margin-top:0">🔗 L'objectif de mois de fonds d'urgence se règle désormais uniquement dans <b>⚙️ Paramètres</b> ("Mois fonds urgence cible"), pour éviter toute contradiction entre onglets.</p>
+        <div class="field"><label>Objectif épargne projet construction (<span class="cur-label">FCFA</span>)</label><input type="number" id="targetConstruction" value="3000000"></div>
+        <button class="btn" id="targetSave">Enregistrer les objectifs</button>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-top:0">💡 Principes de décision financière responsable</div>
+        <div class="principle"><b>🎯 Règle 50/20/20/10</b> — Besoins 50% · Épargne 20% · Désirs 20% · Investissements 10%. Respecter cette répartition chaque mois.</div>
+        <div class="principle"><b>📦 Fonds d'urgence</b> — Constituer en priorité 3 à 6 mois de dépenses. Ne jamais y toucher sauf urgence réelle.</div>
+        <div class="principle"><b>📚 Investir en soi-même</b> — Formation et perfectionnement ont le meilleur ROI. Minimum 10 000 FCFA/mois.</div>
+        <div class="principle"><b>⚡ Automatiser l'épargne</b> — Épargner dès réception du salaire, avant toute dépense.</div>
+        <div class="principle"><b>🛑 Éviter les dettes de consommation</b> — Ne jamais emprunter pour financer des Désirs.</div>
+        <div class="principle"><b>🌱 Diversifier les revenus</b> — Développer une 2e source de revenus. Objectif : +20% en 3 ans.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REFERENTIEL -->
+  <section class="panel" id="panel-referentiel">
+    <p class="small-note">Liste des catégories utilisées dans toute l'application, avec leur type 50/20/20/10. Vous pouvez ajouter vos propres catégories : elles apparaîtront automatiquement dans Transactions, Budget mensuel et Suivi annuel.</p>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">Ajouter une catégorie</div>
+      <div class="two-col-form">
+        <div class="field"><label>Nom de la catégorie</label><input type="text" id="refNewName" placeholder="Ex : Frais bancaires"></div>
+        <div class="field"><label>Type 50/20/20/10</label>
+          <select id="refNewType">
+            <option value="BESOINS">🏠 Besoins</option>
+            <option value="EPARGNE">💚 Épargne</option>
+            <option value="DESIRS">🎯 Désirs</option>
+            <option value="INVEST">📈 Investissements</option>
+            <option value="REVENU">💰 Revenu</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" id="refAddBtn">+ Ajouter au référentiel</button>
+    </div>
+    <div class="section-title">Catégories</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Catégorie</th><th>Type</th><th></th></tr></thead>
+        <tbody id="refBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- GUIDE -->
+  <section class="panel" id="panel-guide">
+    <div class="card">
+      <div class="section-title" style="margin-top:0">🎯 Règle 50/20/20/10</div>
+      <div class="principle"><b>50% — Besoins</b> — Logement, alimentation, transport, santé. Dépenses incompressibles.</div>
+      <div class="principle"><b>20% — Épargne</b> — Épargne urgence, retraite. Payez-vous EN PREMIER avant toute dépense.</div>
+      <div class="principle"><b>20% — Désirs</b> — Loisirs, restaurants, voyages, shopping. Ce qui améliore votre qualité de vie.</div>
+      <div class="principle"><b>10% — Investissements</b> — Mobilier, équipement, formation, placements. Pour développer patrimoine et compétences.</div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Liste déroulante des catégories</div>
+        <div class="principle"><b>Comment l'utiliser</b> — Dans l'onglet Transactions, choisissez la catégorie dans la liste déroulante.</div>
+        <div class="principle"><b>Attribution automatique</b> — Le Type (BESOINS / EPARGNE / DESIRS / INVEST.) se remplit automatiquement selon la catégorie choisie.</div>
+        <div class="principle"><b>Modifier les catégories</b> — Ajoutez vos propres catégories dans l'onglet 📚 Référentiel ; elles apparaissent aussitôt partout dans l'application.</div>
+        <div class="principle"><b>Synchronisation automatique</b> — Toute catégorie utilisée dans Transactions, Budget mensuel ou Investissements mais absente ailleurs est désormais créée automatiquement dans les autres onglets (aucun poste ne se perd).</div>
+        <div class="principle"><b>Modifier une transaction</b> — Dans 📝 Transactions, cliquez sur "Modifier" en bout de ligne : le formulaire se pré-remplit, corrigez puis "Enregistrer les modifications" (ou "Annuler").</div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Devises & codes</div>
+        <div class="principle"><b>Devise</b> — Choisissez votre devise dans <b>⚙️ Paramètres</b> (FCFA/XOF, EUR, USD, GBP, MAD, NGN, GHS, CAD…) ; elle s'affiche automatiquement partout dans l'application.</div>
+        <div class="principle"><b>✅ OK</b> — Écart positif : vous êtes dans le budget.</div>
+        <div class="principle"><b>🔴 Dépassé</b> — Le réalisé dépasse le budget prévu : action corrective nécessaire.</div>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Filtres période</div>
+        <div class="principle"><b>Tableau de bord / Alertes / Suivi annuel / Budget / Revenus</b> — Le filtre Année/Mois en haut de page s'applique à tous ces onglets.</div>
+        <div class="principle"><b>Investissements</b> — Le "Réalisé" de chaque désignation est calculé sur l'historique complet de vos transactions portant cette catégorie.</div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Saisie des revenus</div>
+        <div class="principle"><b>Où saisir</b> — Onglet 💰 Revenus : entrez le montant réalisé par source et par mois. Les prévisions mensuelles alimentent le Tableau de bord.</div>
+        <div class="principle"><b>Mise à jour automatique</b> — Tableau de bord, Budget mensuel, Suivi annuel et Alertes se recalculent automatiquement.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">Nouvelles catégories (Maintenance, Famille, Crédit, Construction)</div>
+      <div class="principle"><b>Maintenance & réparations</b> — "Maintenance véhicule" et "Entretien logement & électroménager" (type Besoins) : entretien voiture, électroménager, plomberie, électricité domestique.</div>
+      <div class="principle"><b>Assistance familiale</b> — Catégorie dédiée (type Besoins) pour les transferts récurrents de soutien à la famille élargie — traitée comme une charge essentielle, pas un loisir.</div>
+      <div class="principle"><b>Remboursement crédit bancaire</b> — Voir l'onglet 🏦 Crédit bancaire : renseignez le montant emprunté, le taux annuel et la durée. La mensualité est calculée automatiquement et alimente le Budget mensuel.</div>
+      <div class="principle"><b>Projet construction maison</b> — Catégorie "Apport projet construction" (type Investissement). Définissez le coût cible et le dépôt mensuel dans l'onglet 📈 Investissements.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">Onglet Crédit bancaire</div>
+      <div class="principle"><b>Paramètres</b> — Montant, taux annuel, durée et date de 1ère mensualité se saisissent en haut de l'onglet.</div>
+      <div class="principle"><b>Référence du crédit</b> — Renseignez une référence (ex : "CRED-PRINC-01"), puis reportez-la dans le champ "Référence" de vos transactions "Remboursement crédit bancaire" : le montant réellement payé sera lié précisément à ce crédit (indispensable si vous suivez plusieurs prêts en 🏦 Multi-Crédits).</div>
+      <div class="principle"><b>Tableau d'amortissement</b> — Calculé automatiquement mois par mois : capital, intérêts et capital restant dû.</div>
+      <div class="principle"><b>Taux d'endettement</b> — Norme bancaire : la mensualité ne devrait pas dépasser 33% du revenu. Suivi dans cet onglet et dans 🔔 Alertes.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">Nouveaux onglets (v13-v14)</div>
+      <div class="principle"><b>⚙️ Paramètres</b> — Personnalisez la règle de répartition (les 4 % doivent totaliser 100%), votre nom, la devise, la tolérance de dépassement, le nombre de mois de fonds d'urgence cible et le taux d'endettement maximal. Ces réglages pilotent automatiquement le Tableau de bord, le Budget mensuel et les Alertes.</div>
+      <div class="principle"><b>🔧 Maintenance</b> — Créez vos équipements avec deux modes de suivi au choix : 📅 par temps (intervalle en mois) ou 🚗 par kilométrage pour les équipements roulants (véhicules) — renseignez alors le kilométrage à la dernière maintenance, l'intervalle en km et mettez à jour le kilométrage actuel via le bouton "MAJ km". Échéance et statut se calculent automatiquement dans les deux cas.</div>
+      <div class="principle"><b>🏦 Multi-Crédits</b> — Vue consolidée jusqu'à 5 crédits simultanés, avec mensualité (PMT) calculée automatiquement et taux d'endettement global (cumulé avec l'onglet Crédit bancaire). Une référence par crédit permet de suivre le montant réellement payé pour chacun.</div>
+      <div class="principle"><b>🎯 Objectifs Épargne</b> — Définissez des objectifs chiffrés avec date cible ; le dépôt mensuel nécessaire et la jauge de progression se calculent automatiquement. Astuce : reliez un objectif à une catégorie existante ("Catégorie liée (auto)") pour que "Épargné à ce jour" se mette à jour tout seul depuis vos transactions, sans ressaisie manuelle.</div>
+      <div class="principle"><b>💎 Patrimoine Net</b> — Catégories d'actifs et de passifs proposées en listes déroulantes prédéfinies. Un tableau "📋 Bilan par catégorie" récapitule vos actifs et passifs côte à côte avant le calcul du patrimoine net. Le passif "Crédit bancaire principal" reprend automatiquement le capital restant dû de l'onglet Crédit bancaire.</div>
+      <div class="principle"><b>📈 Projection Financière</b> — Simulez votre trajectoire financière sur 12/24/36 mois selon des hypothèses de croissance, d'inflation et de rendement que vous définissez.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">🆕 Dernières améliorations</div>
+      <div class="principle"><b>Devise au choix</b> — FCFA (XOF/XAF), EUR, USD, GBP, MAD, NGN, GHS, CAD… sélectionnable dans ⚙️ Paramètres et répercutée automatiquement partout.</div>
+      <div class="principle"><b>Sauvegarde automatique</b> — Chaque saisie ou modification est enregistrée immédiatement (indicateur "✓ enregistré" en haut de page).</div>
+      <div class="principle"><b>Transactions modifiables</b> — Corrigez une transaction déjà enregistrée directement depuis le tableau (bouton "Modifier").</div>
+      <div class="principle"><b>Catégories toujours synchronisées</b> — Un poste créé dans Budget mensuel, Investissements ou Transactions est automatiquement répercuté dans les autres onglets et le 📚 Référentiel.</div>
+      <div class="principle"><b>Maintenance par kilométrage</b> — Suivi adapté aux équipements roulants (véhicules), en complément du suivi par temps.</div>
+      <div class="principle"><b>Crédits identifiés par référence</b> — Rapprochez précisément vos remboursements de chaque crédit, y compris en cas de crédits multiples.</div>
+      <div class="principle"><b>Objectifs auto-alimentés</b> — Un objectif relié à une catégorie se met à jour automatiquement depuis vos transactions.</div>
+      <div class="principle"><b>Bilan patrimonial</b> — Actifs et passifs désormais catégorisés via listes déroulantes, avec un tableau de bilan avant le calcul du patrimoine net.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">🩺 Version 14 — Corrections issues de l'audit financier</div>
+      <div class="principle"><b>Réagencement des menus</b> — Dans ⚙️ Paramètres, réordonnez librement les 16 onglets de navigation avec les flèches ▲ ▼ (bouton de réinitialisation disponible).</div>
+      <div class="principle"><b>Nom d'utilisateur affiché</b> — Le nom renseigné dans ⚙️ Paramètres apparaît désormais à côté du titre de l'application.</div>
+      <div class="principle"><b>Fonds d'urgence : source unique</b> — L'objectif de mois de couverture ne se règle plus que dans ⚙️ Paramètres ; le champ redondant et sans effet de l'onglet Alertes a été retiré pour éviter toute contradiction.</div>
+      <div class="principle"><b>Projection Financière plus fidèle</b> — Le patrimoine net projeté reprend désormais le capital réellement restant dû (Crédit bancaire + Multi-Crédits) et ne le réduit que de la part "capital" de chaque mensualité (et non plus de la mensualité totale), pour une trajectoire plus réaliste. Les postes Besoins/Désirs suivent uniquement l'inflation, indépendamment de la croissance du revenu, pour ne plus cumuler deux effets de hausse.</div>
+      <div class="principle"><b>Couverture fonds d'urgence recalibrée</b> — La moyenne mensuelle des Besoins utilisée pour ce ratio se base désormais sur les derniers mois réellement renseignés, et non plus sur une moyenne annuelle diluée par des mois sans saisie.</div>
+      <div class="principle"><b>Alerte Formation élargie</b> — L'indicateur "Budget Formation & Perfectionnement utilisé" couvre maintenant l'ensemble des catégories de formation (professionnelle, langues, MOOC, coaching, séminaires…), plus seulement le poste générique "Formation".</div>
+      <div class="principle"><b>🧊➡️🔥 Stratégie de remboursement Avalanche</b> — Nouvelle section dans 🏦 Multi-Crédits : classement automatique de tous vos crédits actifs par taux décroissant, avec simulateur d'effort de remboursement supplémentaire (mois et intérêts économisés en dirigeant les surplus vers le crédit le plus coûteux en premier).</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">💾 Sauvegarde, persistance et multi-appareils</div>
+      <div class="principle"><b>Où sont mes données ?</b> — Enregistrées automatiquement dans <b>ce navigateur, sur cet appareil</b> (aucun cloud, aucun serveur). Fermez et rouvrez le fichier : tout est toujours là.</div>
+      <div class="principle"><b>Changer d'ordinateur ou de navigateur</b> — Les données étant propres à chaque navigateur, utilisez ⚙️ Paramètres → "💾 Sauvegarde & Synchronisation" : bouton "📤 Exporter mes données" pour télécharger un fichier, puis "📥 Importer une sauvegarde" sur l'autre appareil.</div>
+      <div class="principle"><b>Astuce de synchronisation</b> — Enregistrez vos exports dans un dossier Google Drive/Dropbox/OneDrive déjà synchronisé : il vous suffira d'un import en un clic sur chaque appareil pour retrouver vos dernières données.</div>
+      <div class="principle"><b>⚠️ Prudence</b> — L'import remplace intégralement les données déjà présentes sur l'appareil. Une confirmation est demandée avant tout remplacement.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">🧹 Consolidation du référentiel (audit des catégories, 04/08/2026)</div>
+      <p class="small-note" style="margin-top:0">Un audit dédié a passé en revue les 52 catégories pour repérer doublons et intitulés trop proches. 5 fusions et 1 renommage ont été validés et appliqués automatiquement (transactions, budgets et projets liés migrés sans perte de données) :</p>
+      <div class="principle">"Mobilier" → fusionné dans <b>"Autre mobilier"</b></div>
+      <div class="principle">"Équipement" → fusionné dans <b>"Autre équipement"</b></div>
+      <div class="principle">"Formation" → fusionné dans <b>"Formation professionnelle"</b></div>
+      <div class="principle">"Perfectionnement" → fusionné dans <b>"Perfectionnement langue"</b></div>
+      <div class="principle">"Autres invest." → fusionné dans <b>"Autres investissements"</b></div>
+      <div class="principle">"Épargne projet construction" → renommé en <b>"Apport projet construction"</b> (pour éviter la confusion avec le pilier Épargne)</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ======================= COMPATIBILITÉ STOCKAGE (hors Claude.ai) =======================
+   window.storage n'existe que lorsque ce fichier est affiché comme "artifact" dans Claude.ai.
+   Une fois le fichier téléchargé et ouvert directement dans un navigateur (ou hébergé ailleurs),
+   window.storage est absent : chaque sauvegarde échouait silencieusement et l'application
+   rechargeait les données de démonstration à chaque réouverture. Ce correctif ajoute un
+   stockage local persistant (localStorage du navigateur) utilisé automatiquement dans ce cas. */
+if (!window.storage) {
+  const LS_PREFIX = 'finances_perso_xof_v14__';
+  window.storage = {
+    get: async (key) => {
+      const v = localStorage.getItem(LS_PREFIX + key);
+      return v === null ? null : { key, value: v };
+    },
+    set: async (key, value) => {
+      localStorage.setItem(LS_PREFIX + key, value);
+      return { key, value };
+    },
+    delete: async (key) => {
+      localStorage.removeItem(LS_PREFIX + key);
+      return { key, deleted: true };
+    },
+    list: async (prefix = '') => {
+      const keys = Object.keys(localStorage)
+        .filter(k => k.startsWith(LS_PREFIX + prefix))
+        .map(k => k.slice(LS_PREFIX.length));
+      return { keys };
+    }
+  };
+}
+
+/* ======================= REFERENTIEL ======================= */
+const CATEGORIES = [
+  ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
+  ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
+  ["Éducation enfants","BESOINS"],["Maintenance véhicule","BESOINS"],["Entretien logement & électroménager","BESOINS"],
+  ["Assistance familiale","BESOINS"],["Remboursement crédit bancaire","BESOINS"],["Autres besoins","BESOINS"],
+  ["Épargne urgence","EPARGNE"],["Livret/Épargne","EPARGNE"],["Retraite","EPARGNE"],["Autres épargnes","EPARGNE"],
+  ["Restaurants","DESIRS"],["Loisirs","DESIRS"],["Voyages","DESIRS"],["Shopping","DESIRS"],["Abonnements","DESIRS"],
+  ["Cadeaux","DESIRS"],["Autres désirs","DESIRS"],
+  ["Bourse/Placements","INVEST"],["Apport projet construction","INVEST"],["Table & chaises","INVEST"],
+  ["Armoire / Dressing","INVEST"],["Décoration","INVEST"],["Autre mobilier","INVEST"],["Ordinateur portable","INVEST"],
+  ["Smartphone","INVEST"],["Tablette","INVEST"],["Équipement sport","INVEST"],["Cours en ligne / MOOC","INVEST"],
+  ["Livres / Matériel pédago","INVEST"],["Conférence / Séminaire","INVEST"],["Coaching / Mentoring","INVEST"],
+  ["Autre formation","INVEST"],["Réserve non affectée","INVEST"],
+  ["Canapé / Salon","INVEST"],["Autre équipement","INVEST"],["Formation professionnelle","INVEST"],
+  ["Perfectionnement langue","INVEST"],["Assurance-vie / Épargne long terme","INVEST"],["Autres investissements","INVEST"]
+];
+const INVEST_GROUPS = [
+  {label:"🛋️ Mobilier & décoration", items:[
+    ["Canapé / Salon","Moyen"],["Table & chaises","Bas"],["Armoire / Dressing","Haut"],["Décoration","Bas"],["Autre mobilier","Bas"]
+  ]},
+  {label:"💻 Équipement personnel", items:[
+    ["Ordinateur portable","Haut"],["Smartphone","Moyen"],["Tablette","Bas"],["Équipement sport","Bas"],["Autre équipement","Bas"]
+  ]},
+  {label:"📚 Formation & études", items:[
+    ["Formation professionnelle","Haut"],["Perfectionnement langue","Moyen"],["Cours en ligne / MOOC","Moyen"],
+    ["Livres / Matériel pédago","Bas"],["Conférence / Séminaire","Moyen"],["Coaching / Mentoring","Haut"],["Autre formation","Bas"]
+  ]},
+  {label:"📊 Placements financiers", items:[
+    ["Bourse/Placements","Haut"],["Assurance-vie / Épargne long terme","Moyen"],["Autres investissements","Haut"],["Réserve non affectée","Bas"]
+  ]}
+];
+const REVENU_SOURCES = ["Salaire principal","Salaire secondaire","Freelance / Consulting","Revenus locatifs",
+  "Dividendes / Placements","Pension / Retraite","Allocations / Aides","Vente d'actifs","Transferts / Dons reçus","Autres revenus"];
+const MOIS_LABELS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+const MOIS_FULL = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const GROUP_LABEL = {BESOINS:"🏠 Besoins",EPARGNE:"💚 Épargne",DESIRS:"🎯 Désirs",INVEST:"📈 Investissements"};
+const GROUP_TARGET_DEFAULT = {BESOINS:0.5,EPARGNE:0.2,DESIRS:0.2,INVEST:0.1};
+function getGroupTarget(type){
+  const s = state.settings||{};
+  const map = {BESOINS:s.allocBesoins, EPARGNE:s.allocEpargne, DESIRS:s.allocDesirs, INVEST:s.allocInvest};
+  return (map[type]!==undefined && map[type]!==null) ? map[type] : GROUP_TARGET_DEFAULT[type];
+}
+const DEFAULT_BUDGETS = {
+  "Logement":250000,"Alimentation":80000,"Transport":40000,"Électricité/Eau":20000,"Internet/Téléphone":15000,
+  "Assurance":20000,"Santé":20000,"Vêtements essentiels":15000,"Éducation enfants":30000,"Maintenance véhicule":15000,
+  "Entretien logement & électroménager":15000,"Autres besoins":10000,
+  "Épargne urgence":50000,"Livret/Épargne":50000,"Autres épargnes":50000,
+  "Restaurants":30000,"Loisirs":20000,"Voyages":30000,"Shopping":25000,"Abonnements":15000,"Autres désirs":10000,
+  "Formation professionnelle":25000
+};
+
+/* ======================= STATE ======================= */
+let state = {
+  transactions: [],
+  budgets: {},
+  revenus: {},           // {"2025-01": {source: amount}}
+  revenusPrevision: {},  // {source: monthly forecast}
+  credit: {type:"Crédit immobilier / véhicule / équipement", montant:5000000, taux:8, duree:60, date:"2025-01-01"},
+  targets: {urgenceMois:3, construction:3000000},
+  customCategories: [], // [[name,type], ...]
+  investProjects: {},   // {designation:{budget,priorite,paye,urgent}}
+  construction: {coutTotal:15000000, dateDebut:"2025-01-01", depotMensuel:100000},
+  settings: {allocBesoins:0.5, allocEpargne:0.2, allocDesirs:0.2, allocInvest:0.1,
+    nom:"", devise:"FCFA", tolerance:0.05, moisFondsUrgence:3, tauxEndettMax:0.33},
+  maintenance: [],  // {id,nom,categorie,intervalle,derniere,coutEstime,coutReel,responsable,notes}
+  multiCredits: [], // 5 slots {id,intitule,montantInitial,capitalRestant,taux,moisRestants}
+  objectifs: [],    // {id,nom,categorie,montantCible,epargneManuel,dateCible,priorite,note}
+  patrimoine: {actifs:[], passifs:[]},
+  projection: {revenu:0, croissance:0.005, inflation:0.003, rendement:0.006, horizon:36}
+};
+let saveTimer=null;
+function getAllCategories(){ return CATEGORIES.concat(state.customCategories||[]); }
+function defaultInvestProjects(){
+  const obj={};
+  INVEST_GROUPS.forEach(g=>g.items.forEach(([name,prio])=>{ obj[name]={budget:0,priorite:prio,paye:false,urgent:false}; }));
+  return obj;
+}
+
+function defaultData(){
+  const revP = { "Salaire principal":400000, "Salaire secondaire":50000, "Freelance / Consulting":30000, "Revenus locatifs":0, "Dividendes / Placements":0, "Pension / Retraite":0, "Allocations / Aides":0, "Vente d'actifs":0, "Transferts / Dons reçus":0, "Autres revenus":0 };
+  const budgets = {}; CATEGORIES.forEach(([n])=>budgets[n]=DEFAULT_BUDGETS[n]||0);
+  return {
+    transactions:[
+      {id:"tx_1785679910703_knhojc", date:"2025-01-02", description:"Loyer janvier", categorie:"Logement", type:"BESOINS", montant:900000, mode:"Virement", reference:"LOY-001", notes:""},
+      {id:"tx_1785679910704_zzn66i", date:"2025-01-03", description:"Courses marché", categorie:"Alimentation", type:"BESOINS", montant:65000, mode:"Espèces", reference:"MKT-001", notes:""},
+      {id:"tx_1785679910704_nbj7yp", date:"2025-01-05", description:"Abonnement Canal+", categorie:"Abonnements", type:"DESIRS", montant:15000, mode:"Mobile Money", reference:"ABN-001", notes:""},
+      {id:"tx_1785679910704_5pfd3z", date:"2025-01-07", description:"Épargne mensuelle", categorie:"Livret/Épargne", type:"EPARGNE", montant:100000, mode:"Virement", reference:"EPG-001", notes:"Auto"},
+      {id:"tx_1785679910704_cse7bg", date:"2025-01-08", description:"Formation Excel Udemy", categorie:"Formation", type:"INVEST", montant:25000, mode:"CB", reference:"FOR-001", notes:""},
+      {id:"tx_1785679910704_uzga1j", date:"2025-01-09", description:"Restaurant", categorie:"Restaurants", type:"DESIRS", montant:18000, mode:"Espèces", reference:"RST-001", notes:""},
+      {id:"tx_1785679910704_q0jqt7", date:"2025-01-10", description:"Chaise bureau", categorie:"Table & chaises", type:"INVEST", montant:85000, mode:"CB", reference:"MOB-001", notes:"Télétravail"},
+      {id:"tx_1785679910704_nfc32i", date:"2025-01-12", description:"Abonnement MTN", categorie:"Internet/Téléphone", type:"BESOINS", montant:10000, mode:"Mobile Money", reference:"TEL-001", notes:""},
+      {id:"tx_1785679910704_ldrv8w", date:"2025-01-15", description:"Assurance moto", categorie:"Assurance", type:"BESOINS", montant:20000, mode:"Espèces", reference:"ASS-001", notes:""},
+      {id:"tx_1785679910704_3ycdpk", date:"2025-01-20", description:"Cours de langue", categorie:"Perfectionnement", type:"INVEST", montant:30000, mode:"Espèces", reference:"CRS-001", notes:"Anglais"}
+    ],
+    budgets, revenus:{}, revenusPrevision:revP,
+    credit:{type:"Crédit immobilier / véhicule / équipement", montant:5000000, taux:8, duree:60, date:"2025-01-01"},
+    targets:{urgenceMois:3, construction:3000000},
+    customCategories:[],
+    investProjects:defaultInvestProjects(),
+    construction:{coutTotal:15000000, dateDebut:"2025-01-01", depotMensuel:100000},
+    settings:{allocBesoins:0.5, allocEpargne:0.2, allocDesirs:0.15, allocInvest:0.15,
+      nom:"", devise:"FCFA", tolerance:0.05, moisFondsUrgence:3, tauxEndettMax:0.33},
+    maintenance:[
+      {id:"tx_1785679910704_s896rv", nom:"Voiture (vidange)", categorie:"Véhicule", intervalle:6, derniere:"2025-01-10", coutEstime:15000, coutReel:0, responsable:"Garage XYZ", notes:""},
+      {id:"tx_1785679910704_g5hml7", nom:"Climatiseur (entretien)", categorie:"Logement", intervalle:12, derniere:"2025-01-01", coutEstime:0, coutReel:0, responsable:"", notes:""},
+      {id:"tx_1785679910704_2q8phg", nom:"Machine à laver", categorie:"Logement", intervalle:24, derniere:"2024-06-01", coutEstime:0, coutReel:0, responsable:"", notes:"Filtre à nettoyer"}
+    ],
+    multiCredits: [
+      {id:"tx_1785679910704_631i4z", intitule:"Crédit 1", montantInitial:0, capitalRestant:0, taux:7, moisRestants:12},
+      {id:"tx_1785679910704_kbg6f1", intitule:"Crédit 2", montantInitial:0, capitalRestant:0, taux:7, moisRestants:12},
+      {id:"tx_1785679910704_88q3g0", intitule:"Crédit 3", montantInitial:0, capitalRestant:0, taux:7, moisRestants:12},
+      {id:"tx_1785679910704_umt2d0", intitule:"Crédit 4", montantInitial:0, capitalRestant:0, taux:7, moisRestants:12},
+      {id:"tx_1785679910704_70adyc", intitule:"Crédit 5", montantInitial:0, capitalRestant:0, taux:7, moisRestants:12}
+    ],
+    objectifs:[
+      {id:"tx_1785679910704_fncrsh", nom:"Fonds d'urgence (3 mois)", categorie:"Sécurité", montantCible:450000, epargneManuel:0, dateCible:"2026-01-01", priorite:"🔴 Critique", note:""},
+      {id:"tx_1785679910704_ctcgi0", nom:"Réfrigérateur", categorie:"Équipement", montantCible:200000, epargneManuel:0, dateCible:"2025-07-01", priorite:"🔶 Haute", note:""},
+      {id:"tx_1785679910704_bk7slu", nom:"Vacances famille", categorie:"Loisirs", montantCible:300000, epargneManuel:0, dateCible:"2025-09-01", priorite:"🟡 Moyenne", note:""},
+      {id:"tx_1785679910704_iu0fb5", nom:"Formation MBA", categorie:"Formation", montantCible:500000, epargneManuel:25000, dateCible:"2026-01-01", priorite:"🔶 Haute", note:""},
+      {id:"tx_1785679910704_94o0aq", nom:"Apport construction", categorie:"Construction", montantCible:2000000, epargneManuel:0, dateCible:"2027-01-01", priorite:"🔴 Critique", note:""}
+    ],
+    patrimoine:{
+      actifs:[
+        {id:"tx_1785679910704_zv4dhr", nom:"Solde bancaire (épargne)", categorie:"Liquidités", valeur:240000},
+        {id:"tx_1785679910704_czikge", nom:"Apport projet construction", categorie:"Immobilier", valeur:0},
+        {id:"tx_1785679910704_hn7v7f", nom:"Investissements financiers", categorie:"Placements", valeur:0},
+        {id:"tx_1785679910704_r46905", nom:"Mobilier & équipements", categorie:"Biens", valeur:0},
+        {id:"tx_1785679910704_tktcdw", nom:"Véhicule", categorie:"Biens", valeur:0}
+      ],
+      passifs:[
+        {id:"tx_1785679910704_iw361a", nom:"Autres dettes", categorie:"Divers", valeur:0}
+      ]
+    },
+    projection:{revenu:480000, croissance:0.005, inflation:0.003, rendement:0.006, horizon:36}
+  };
+}
+function cuid(){return 'tx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get('finances-data');
+    if(res && res.value){ state = JSON.parse(res.value); }
+    else { state = defaultData(); await persist(true); }
+  }catch(e){ state = defaultData(); await persist(true); }
+  normalizeState();
+  applyCategoryMergesAndRenames();
+  ensureTabOrder();
+  await checkAndSyncCategories();
+}
+
+/* ======================= FUSIONS & RENOMMAGES DE CATEGORIES (audit du 04/08/2026) =======================
+   Migre automatiquement les données existantes (transactions, budgets, projets d'investissement, objectifs liés)
+   des anciens intitulés vers les nouveaux, validés lors de l'audit des catégories. Idempotent : sans effet si
+   les anciens intitulés n'existent plus. */
+const CATEGORY_MERGES = {
+  "Mobilier": "Autre mobilier",
+  "Équipement": "Autre équipement",
+  "Formation": "Formation professionnelle",
+  "Perfectionnement": "Perfectionnement langue",
+  "Autres invest.": "Autres investissements"
+};
+const CATEGORY_RENAMES = {
+  "Épargne projet construction": "Apport projet construction"
+};
+function applyCategoryMergesAndRenames(){
+  const allMaps = [CATEGORY_MERGES, CATEGORY_RENAMES];
+  allMaps.forEach(map=>{
+    // Transactions : ré-étiquetage direct
+    state.transactions.forEach(t=>{ if(map[t.categorie]) t.categorie = map[t.categorie]; });
+
+    // Budgets : fusion par somme
+    Object.keys(map).forEach(old=>{
+      const nw = map[old];
+      if(old in state.budgets){
+        state.budgets[nw] = Number(state.budgets[nw]||0) + Number(state.budgets[old]||0);
+        delete state.budgets[old];
+      }
+    });
+
+    // Projets d'investissement (onglet Investissements) : fusion budget + drapeaux
+    Object.keys(map).forEach(old=>{
+      const nw = map[old];
+      if(state.investProjects && (old in state.investProjects)){
+        const oldProj = state.investProjects[old];
+        if(nw in state.investProjects){
+          state.investProjects[nw].budget = Number(state.investProjects[nw].budget||0) + Number(oldProj.budget||0);
+          state.investProjects[nw].paye = state.investProjects[nw].paye || oldProj.paye;
+          state.investProjects[nw].urgent = state.investProjects[nw].urgent || oldProj.urgent;
+        } else {
+          state.investProjects[nw] = oldProj;
+        }
+        delete state.investProjects[old];
+      }
+    });
+
+    // Objectifs Épargne : catégorie liée (auto)
+    (state.objectifs||[]).forEach(o=>{ if(map[o.categorieLiee]) o.categorieLiee = map[o.categorieLiee]; });
+
+    // Sécurité : retire ces intitulés s'ils avaient été enregistrés comme catégories personnalisées
+    if(state.customCategories){
+      state.customCategories = state.customCategories.filter(([n])=> !map[n]);
+    }
+  });
+}
+function normalizeState(){
+  if(!state.customCategories) state.customCategories=[];
+  getAllCategories().forEach(([n])=>{ if(!(n in state.budgets)) state.budgets[n]=0; });
+  REVENU_SOURCES.forEach(s=>{ if(!(s in state.revenusPrevision)) state.revenusPrevision[s]=0; });
+  if(!state.targets) state.targets={urgenceMois:3,construction:3000000};
+  if(!state.investProjects) state.investProjects=defaultInvestProjects();
+  else { const def=defaultInvestProjects(); Object.keys(def).forEach(k=>{ if(!(k in state.investProjects)) state.investProjects[k]=def[k]; }); }
+  if(!state.construction) state.construction={coutTotal:15000000, dateDebut:"2025-01-01", depotMensuel:100000};
+  if(!state.settings) state.settings={allocBesoins:0.5, allocEpargne:0.2, allocDesirs:0.2, allocInvest:0.1,
+    nom:"", devise:"FCFA", tolerance:0.05, moisFondsUrgence:3, tauxEndettMax:0.33};
+  if(!state.maintenance) state.maintenance=[];
+  if(!state.multiCredits || state.multiCredits.length<5) state.multiCredits = Array.from({length:5},(_,i)=>(state.multiCredits&&state.multiCredits[i])||{id:cuid(), intitule:`Crédit ${i+1}`, montantInitial:0, capitalRestant:0, taux:7, moisRestants:12});
+  if(!state.objectifs) state.objectifs=[];
+  if(!state.patrimoine) state.patrimoine={actifs:[], passifs:[]};
+  if(!state.projection) state.projection={revenu:480000, croissance:0.005, inflation:0.003, rendement:0.006, horizon:36};
+  if(!state.tabOrder) state.tabOrder=null; // sera régénéré par ensureTabOrder()
+}
+
+/* ======================= SYNCHRONISATION DES CATEGORIES ======================= */
+// Garantit la cohérence entre Transactions, Budget, Investissements et Référentiel :
+// toute catégorie utilisée quelque part doit exister partout ailleurs (créée automatiquement si absente).
+async function checkAndSyncCategories(){
+  let changed = false;
+  const knownNames = new Set(getAllCategories().map(c=>c[0]));
+
+  // 1) Catégories présentes dans les Transactions mais absentes du Référentiel → créer (type = celui enregistré sur la transaction)
+  state.transactions.forEach(t=>{
+    if(t.categorie && !knownNames.has(t.categorie)){
+      state.customCategories.push([t.categorie, t.type||'BESOINS']);
+      knownNames.add(t.categorie);
+      changed = true;
+    }
+  });
+
+  // 2) Postes présents dans Budget mensuel mais absents du Référentiel → créer (type BESOINS par défaut, non déterminable)
+  Object.keys(state.budgets||{}).forEach(name=>{
+    if(!knownNames.has(name)){
+      state.customCategories.push([name, 'BESOINS']);
+      knownNames.add(name);
+      changed = true;
+    }
+  });
+
+  // 3) Désignations présentes dans Investissements mais absentes du Référentiel → créer (type INVEST)
+  Object.keys(state.investProjects||{}).forEach(name=>{
+    if(!knownNames.has(name)){
+      state.customCategories.push([name, 'INVEST']);
+      knownNames.add(name);
+      changed = true;
+    }
+  });
+
+  // 4) S'assurer que chaque catégorie connue a bien une entrée Budget (poste créé si manquant)
+  getAllCategories().forEach(([n])=>{ if(!(n in state.budgets)){ state.budgets[n]=0; changed=true; } });
+
+  // 5) S'assurer que chaque poste INVEST connu a bien une entrée dans investProjects
+  getAllCategories().filter(c=>c[1]==='INVEST').forEach(([n])=>{
+    if(!(n in state.investProjects)){ state.investProjects[n] = {budget:0,priorite:'Bas',paye:false,urgent:false}; changed=true; }
+  });
+
+  // 6) Dédoublonnage : une catégorie personnalisée ne doit pas apparaître deux fois,
+  // ni entrer en conflit avec une catégorie déjà définie dans le référentiel de base.
+  const baseNames = new Set(CATEGORIES.map(c=>c[0]));
+  const seen = new Set();
+  const dedup = [];
+  (state.customCategories||[]).forEach(([n,t])=>{
+    if(!n || baseNames.has(n) || seen.has(n)) { changed = true; return; }
+    seen.add(n); dedup.push([n,t]);
+  });
+  if(dedup.length !== (state.customCategories||[]).length){ state.customCategories = dedup; changed = true; }
+
+  // 7) Garantir la structure Multi-Crédits (toujours 5 lignes actives)
+  if(!state.multiCredits || state.multiCredits.length<5){
+    state.multiCredits = Array.from({length:5},(_,i)=>(state.multiCredits&&state.multiCredits[i])||{id:cuid(), intitule:`Crédit ${i+1}`, montantInitial:0, capitalRestant:0, taux:7, moisRestants:12});
+    changed = true;
+  }
+
+  if(changed) await persist(true);
+  return changed;
+}
+async function persist(silent){
+  try{
+    await window.storage.set('finances-data', JSON.stringify(state));
+    if(!silent){
+      const m=document.getElementById('saveMsg');
+      m.classList.add('show'); clearTimeout(saveTimer);
+      saveTimer=setTimeout(()=>m.classList.remove('show'),1200);
+    }
+  }catch(e){ console.error('Erreur de sauvegarde', e); }
+}
+
+/* ======================= HELPERS ======================= */
+function fmt(n){
+  n = Math.round(n||0);
+  const neg = n<0; n=Math.abs(n);
+  let s = n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  return (neg?'-':'')+s;
+}
+function pct(n){ return (Math.round((n||0)*1000)/10)+'%'; }
+function devise(){ return (state.settings&&state.settings.devise)||'FCFA'; }
+function updateCurrencyLabels(){
+  document.querySelectorAll('.cur-label').forEach(el=>{ el.textContent = devise(); });
+}
+function updateHeaderRule(){
+  const el = document.getElementById('ruleHeader');
+  if(!el) return;
+  const b = Math.round(getGroupTarget('BESOINS')*100);
+  const e = Math.round(getGroupTarget('EPARGNE')*100);
+  const d = Math.round(getGroupTarget('DESIRS')*100);
+  const i = Math.round(getGroupTarget('INVEST')*100);
+  el.innerHTML = `Règle <b>${b}</b> Besoins · <b>${e}</b> Épargne · <b>${d}</b> Désirs · <b>${i}</b> Invest. — <span class="cur-label">${devise()}</span>`;
+}
+function catType(cat){ const f=getAllCategories().find(c=>c[0]===cat); return f?f[1]:'BESOINS'; }
+function yearsInUse(){
+  const ys = new Set([new Date().getFullYear()]);
+  state.transactions.forEach(t=>ys.add(parseInt(t.date.slice(0,4))));
+  Object.keys(state.revenus).forEach(k=>ys.add(parseInt(k.slice(0,4))));
+  return Array.from(ys).sort();
+}
+function currentFilter(){
+  return { year: parseInt(document.getElementById('filterYear').value), month: document.getElementById('filterMonth').value };
+}
+function txMatchesPeriod(t, year, month){
+  const [y,m] = t.date.split('-');
+  if(parseInt(y)!==year) return false;
+  if(month!=='all' && parseInt(m)!==parseInt(month)) return false;
+  return true;
+}
+function sumByType(type, year, month){
+  return state.transactions.filter(t=>t.type===type && txMatchesPeriod(t,year,month)).reduce((s,t)=>s+Number(t.montant),0);
+}
+function sumByCat(cat, year, month){
+  return state.transactions.filter(t=>t.categorie===cat && txMatchesPeriod(t,year,month)).reduce((s,t)=>s+Number(t.montant),0);
+}
+function budgetByType(type){
+  return getAllCategories().filter(c=>c[1]===type).reduce((s,[n])=>s+Number(state.budgets[n]||0),0);
+}
+function revenusRealisePeriod(year, month){
+  let total=0;
+  Object.keys(state.revenus).forEach(key=>{
+    const [y,m]=key.split('-');
+    if(parseInt(y)!==year) return;
+    if(month!=='all' && parseInt(m)!==parseInt(month)) return;
+    const row = state.revenus[key];
+    REVENU_SOURCES.forEach(s=>total+=Number(row[s]||0));
+  });
+  return total;
+}
+function revenusPrevuPeriod(year, month){
+  const monthly = REVENU_SOURCES.reduce((s,src)=>s+Number(state.revenusPrevision[src]||0),0);
+  return month==='all' ? monthly*12 : monthly;
+}
+function revenusRealiseParSource(source, year, month){
+  let total=0;
+  Object.keys(state.revenus).forEach(key=>{
+    const [y,m]=key.split('-');
+    if(parseInt(y)!==year) return;
+    if(month!=='all' && parseInt(m)!==parseInt(month)) return;
+    total+=Number(state.revenus[key][source]||0);
+  });
+  return total;
+}
+
+/* ======================= TABS (dynamiques, réagençables) ======================= */
+const TAB_DEFS = [
+  {id:'dashboard', label:'📊 Tableau de bord'},
+  {id:'parametres', label:'⚙️ Paramètres'},
+  {id:'transactions', label:'📝 Transactions'},
+  {id:'budget', label:'💼 Budget mensuel'},
+  {id:'revenus', label:'💰 Revenus'},
+  {id:'investissements', label:'📈 Investissements'},
+  {id:'maintenance', label:'🔧 Maintenance'},
+  {id:'credit', label:'🏦 Crédit bancaire'},
+  {id:'multicredits', label:'🏦 Multi-Crédits'},
+  {id:'objectifs', label:'🎯 Objectifs Épargne'},
+  {id:'patrimoine', label:'💎 Patrimoine Net'},
+  {id:'projection', label:'📈 Projection Financière'},
+  {id:'annuel', label:'📅 Suivi annuel'},
+  {id:'alertes', label:'🔔 Alertes'},
+  {id:'referentiel', label:'📚 Référentiel'},
+  {id:'guide', label:'ℹ️ Guide'}
+];
+const DEFAULT_TAB_ORDER = TAB_DEFS.map(t=>t.id);
+let currentTab = 'dashboard';
+function tabLabel(id){ const t=TAB_DEFS.find(x=>x.id===id); return t?t.label:id; }
+function ensureTabOrder(){
+  if(!state.tabOrder || !Array.isArray(state.tabOrder)) state.tabOrder = DEFAULT_TAB_ORDER.slice();
+  // ajoute les onglets manquants (nouvelles versions) et retire les obsolètes
+  const known = new Set(DEFAULT_TAB_ORDER);
+  state.tabOrder = state.tabOrder.filter(id=>known.has(id));
+  DEFAULT_TAB_ORDER.forEach(id=>{ if(!state.tabOrder.includes(id)) state.tabOrder.push(id); });
+}
+function renderNav(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = state.tabOrder.map(id=>`<button data-tab="${id}" class="${id===currentTab?'active':''}">${tabLabel(id)}</button>`).join('');
+}
+document.getElementById('tabs').addEventListener('click',e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  currentTab = btn.dataset.tab;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+currentTab).classList.add('active');
+  renderAll();
+});
+function renderTabOrderUI(){
+  const body = document.getElementById('tabOrderBody');
+  body.innerHTML = state.tabOrder.map((id,i)=>`
+    <tr>
+      <td class="num">${i+1}</td>
+      <td>${tabLabel(id)}</td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="btn secondary small" data-tab-up="${id}" ${i===0?'disabled':''}>▲</button>
+        <button class="btn secondary small" data-tab-down="${id}" ${i===state.tabOrder.length-1?'disabled':''}>▼</button>
+      </td>
+    </tr>`).join('');
+  body.querySelectorAll('[data-tab-up]').forEach(b=>b.addEventListener('click', ()=>moveTab(b.dataset.tabUp,-1)));
+  body.querySelectorAll('[data-tab-down]').forEach(b=>b.addEventListener('click', ()=>moveTab(b.dataset.tabDown,1)));
+}
+async function moveTab(id, dir){
+  const idx = state.tabOrder.indexOf(id);
+  const newIdx = idx+dir;
+  if(newIdx<0 || newIdx>=state.tabOrder.length) return;
+  [state.tabOrder[idx], state.tabOrder[newIdx]] = [state.tabOrder[newIdx], state.tabOrder[idx]];
+  await persist();
+  renderNav();
+  renderTabOrderUI();
+}
+document.getElementById('tabOrderReset').addEventListener('click', async ()=>{
+  state.tabOrder = DEFAULT_TAB_ORDER.slice();
+  await persist();
+  renderNav();
+  renderTabOrderUI();
+});
+
+/* ======================= EXPORT / IMPORT (sauvegarde multi-appareils) ======================= */
+function pad2(n){ return String(n).padStart(2,'0'); }
+document.getElementById('exportDataBtn').addEventListener('click', ()=>{
+  const d = new Date();
+  const filename = `mes-finances-sauvegarde-${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`;
+  const payload = {
+    _meta: { app:'Mes Finances Personnelles', version:14, exporteLe:d.toISOString() },
+    state
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importDataBtn').addEventListener('click', ()=>{
+  document.getElementById('importDataInput').click();
+});
+document.getElementById('importDataInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev=>{
+    let parsed;
+    try{ parsed = JSON.parse(ev.target.result); }
+    catch(err){ alert("Ce fichier n'est pas une sauvegarde valide (JSON illisible)."); e.target.value=''; return; }
+    const incoming = parsed && parsed.state ? parsed.state : parsed; // tolère un export brut (sans enveloppe _meta)
+    if(!incoming || typeof incoming!=='object' || !Array.isArray(incoming.transactions)){
+      alert("Ce fichier ne ressemble pas à une sauvegarde de Mes Finances Personnelles.");
+      e.target.value=''; return;
+    }
+    const nbTx = incoming.transactions.length;
+    const ok = confirm(
+      `Importer cette sauvegarde (${nbTx} transaction(s)) ?\n\n`+
+      `⚠️ Toutes les données actuellement enregistrées sur cet appareil seront remplacées et ne pourront pas être récupérées, sauf si vous en avez vous-même une autre sauvegarde.`
+    );
+    if(!ok){ e.target.value=''; return; }
+    state = incoming;
+    normalizeState();
+    applyCategoryMergesAndRenames();
+    ensureTabOrder();
+    await checkAndSyncCategories();
+    await persist(true);
+    e.target.value='';
+    const m = document.getElementById('importMsg');
+    m.classList.add('show'); setTimeout(()=>m.classList.remove('show'),2000);
+    initFilters();
+    populateTxSelects();
+    renderAll();
+  };
+  reader.readAsText(file);
+});
+
+function updateHeaderUserName(){
+  const nom = (state.settings && state.settings.nom || '').trim();
+  document.getElementById('headerUserName').textContent = nom ? ` - ${nom}` : '';
+}
+
+/* ======================= FILTERS INIT ======================= */
+function initFilters(){
+  const ySel=document.getElementById('filterYear');
+  const yearsData = new Set(yearsInUse());
+  for(let y=2024;y<=2050;y++) yearsData.add(y);
+  const years = Array.from(yearsData).sort((a,b)=>a-b);
+  document.getElementById('yearOptions').innerHTML = years.map(y=>`<option value="${y}">`).join('');
+  const defYear = state.transactions.length ? parseInt(state.transactions[0].date.slice(0,4)) : new Date().getFullYear();
+  ySel.value = defYear;
+  const mSel=document.getElementById('filterMonth');
+  mSel.innerHTML = '<option value="all">Tous les mois</option>' + MOIS_FULL.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  ySel.addEventListener('change', ()=>{
+    if(!ySel.value || parseInt(ySel.value)<2000) ySel.value = defYear;
+    renderAll();
+  });
+  ySel.addEventListener('input', ()=>{ if(ySel.value && ySel.value.length===4) renderAll(); });
+  mSel.addEventListener('change', renderAll);
+}
+function refreshYearOptions(){
+  const yearsData = new Set(yearsInUse());
+  for(let y=2024;y<=2050;y++) yearsData.add(y);
+  const years = Array.from(yearsData).sort((a,b)=>a-b);
+  document.getElementById('yearOptions').innerHTML = years.map(y=>`<option value="${y}">`).join('');
+}
+
+/* ======================= DASHBOARD ======================= */
+let chartRep=null, chartEvo=null;
+
+// --- Assombrit une couleur hex d'un pourcentage donné (utilisé pour l'effet de profondeur 3D) ---
+function shadeColor(hex, percent){
+  const r = Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(1,3),16)*(1+percent/100))));
+  const g = Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(3,5),16)*(1+percent/100))));
+  const b = Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(5,7),16)*(1+percent/100))));
+  return `rgb(${r},${g},${b})`;
+}
+
+// --- Plugin Chart.js "maison" : transforme l'anneau plat en anneau pseudo-3D (profondeur + ombrage)
+// et affiche le % directement sur chaque part. Aucune dépendance externe requise. ---
+const pseudo3dRingPlugin = {
+  id: 'pseudo3dRing',
+  beforeDatasetsDraw(chart){
+    const {ctx} = chart;
+    const meta = chart.getDatasetMeta(0);
+    const colors = chart.data.datasets[0].backgroundColor;
+    const DEPTH = 14;
+    ctx.save();
+    for(let layer = DEPTH; layer >= 1; layer--){
+      meta.data.forEach((arc, i) => {
+        const {startAngle, endAngle, innerRadius, outerRadius, x, y} = arc.getProps(
+          ['startAngle','endAngle','innerRadius','outerRadius','x','y'], true
+        );
+        if(startAngle===endAngle) return;
+        const shade = -18 - (DEPTH-layer)*1.4;
+        ctx.beginPath();
+        ctx.fillStyle = shadeColor(colors[i], shade);
+        ctx.arc(x, y+layer, outerRadius, startAngle, endAngle);
+        ctx.arc(x, y+layer, innerRadius, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fill();
+      });
+    }
+    ctx.restore();
+  },
+  afterDatasetsDraw(chart){
+    const {ctx} = chart;
+    const meta = chart.getDatasetMeta(0);
+    const dataArr = chart.data.datasets[0].data;
+    const total = dataArr.reduce((a,b)=>a+Number(b||0),0);
+    if(total<=0) return;
+    ctx.save();
+    ctx.font = 'bold 12px Segoe UI, Arial, sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 3;
+    meta.data.forEach((arc,i)=>{
+      const val = Number(dataArr[i]||0);
+      if(val<=0) return;
+      const pctVal = Math.round(val/total*100);
+      if(pctVal<5) return; // évite le texte illisible sur une trop petite part
+      const {startAngle,endAngle,innerRadius,outerRadius,x,y} = arc.getProps(
+        ['startAngle','endAngle','innerRadius','outerRadius','x','y'], true
+      );
+      const midAngle = (startAngle+endAngle)/2;
+      const midRadius = (innerRadius+outerRadius)/2;
+      ctx.fillText(pctVal+'%', x+Math.cos(midAngle)*midRadius, y+Math.sin(midAngle)*midRadius);
+    });
+    ctx.restore();
+  }
+};
+
+function renderDashboard(){
+  const {year,month} = currentFilter();
+  const blocks = document.getElementById('dashBlocks');
+  const types = ['BESOINS','EPARGNE','DESIRS','INVEST'];
+  const revenuPeriode = revenusRealisePeriod(year,month);
+  blocks.innerHTML = types.map(type=>{
+    const budget = month==='all' ? budgetByType(type)*12 : budgetByType(type);
+    const realise = sumByType(type,year,month);
+    const ecart = budget-realise;
+    const consomme = budget>0 ? realise/budget : 0;
+    const tauxRevenu = revenuPeriode>0 ? realise/revenuPeriode : 0;
+    const cls = type==='BESOINS'?'':type.toLowerCase();
+    return `<div class="card block-card ${cls}">
+      <h3>${GROUP_LABEL[type]} (${Math.round(getGroupTarget(type)*100)}%)</h3>
+      <div class="pct">${fmt(realise)} <span style="font-size:12px;color:var(--ink-soft)">${devise()}</span></div>
+      <div class="row"><span>Budget</span><b>${fmt(budget)}</b></div>
+      <div class="row"><span>Écart</span><b style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</b></div>
+      <div class="row"><span>% Consommé</span><b>${pct(consomme)}</b></div>
+      <div class="row"><span>Taux / Revenu</span><b>${revenuPeriode>0?pct(tauxRevenu):'—'}</b></div>
+      <div class="bar"><span style="width:${Math.min(consomme*100,100)}%"></span></div>
+    </div>`;
+  }).join('');
+
+  const totalDep = types.reduce((s,t)=>s+sumByType(t,year,month),0);
+  const solde = revenuPeriode-totalDep;
+  const epargneReal = sumByType('EPARGNE',year,month);
+  const tauxEp = revenuPeriode>0 ? epargneReal/revenuPeriode : 0;
+  document.getElementById('kpiDepenses').textContent = fmt(totalDep)+' '+devise();
+  document.getElementById('kpiRevenus').textContent = fmt(revenuPeriode)+' '+devise();
+  const kSolde = document.getElementById('kpiSolde');
+  kSolde.textContent = fmt(solde)+' '+devise(); kSolde.className='value '+(solde<0?'neg':'pos');
+  document.getElementById('kpiTauxEpargne').textContent = revenuPeriode>0?pct(tauxEp):'—';
+
+  // revenue detail table
+  const revBody = document.getElementById('dashRevenusBody');
+  let totalPrevu=0, totalReal=0;
+  revBody.innerHTML = REVENU_SOURCES.map(src=>{
+    const prevu = month==='all' ? Number(state.revenusPrevision[src]||0)*12 : Number(state.revenusPrevision[src]||0);
+    const real = revenusRealiseParSource(src,year,month);
+    totalPrevu+=prevu; totalReal+=real;
+    const ecart = real-prevu;
+    return `<tr><td>${src}</td><td class="num">${fmt(prevu)}</td><td class="num">${fmt(real)}</td><td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td></tr>`;
+  }).join('') + `<tr style="font-weight:700;background:var(--bg)"><td>TOTAL REVENUS</td><td class="num">${fmt(totalPrevu)}</td><td class="num">${fmt(totalReal)}</td><td class="num">${fmt(totalReal-totalPrevu)}</td></tr>`;
+
+  // charts
+  const ctx1 = document.getElementById('chartRepartition');
+  const budgetData = types.map(t=> month==='all'?budgetByType(t)*12:budgetByType(t));
+  const realData = types.map(t=>sumByType(t,year,month));
+  if(chartRep) chartRep.destroy();
+  chartRep = new Chart(ctx1,{
+    type:'doughnut',
+    data:{ labels:types.map(t=>GROUP_LABEL[t]), datasets:[{ data:realData, backgroundColor:['#2E6F8E','#1F5C4A','#B5533C','#6B5B95'], borderWidth:2, borderColor:'#fff' }]},
+    plugins:[pseudo3dRingPlugin],
+    options:{
+      layout:{padding:{bottom:16}},
+      plugins:{
+        legend:{
+          position:'bottom', labels:{boxWidth:10, font:{size:11},
+            generateLabels:(chart)=>{
+              const ds = chart.data.datasets[0];
+              const total = ds.data.reduce((a,b)=>a+Number(b||0),0);
+              return chart.data.labels.map((label,i)=>{
+                const val = Number(ds.data[i]||0);
+                const pctVal = total>0 ? Math.round(val/total*100) : 0;
+                return { text:`${label} (${pctVal}%)`, fillStyle:ds.backgroundColor[i], strokeStyle:ds.backgroundColor[i], index:i };
+              });
+            }
+          }
+        },
+        tooltip:{
+          callbacks:{
+            label:(context)=>{
+              const ds = context.dataset.data;
+              const total = ds.reduce((a,b)=>a+Number(b||0),0);
+              const pctVal = total>0 ? Math.round(context.parsed/total*100) : 0;
+              return `${context.label}: ${fmt(context.parsed)} ${devise()} (${pctVal}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const ctx2 = document.getElementById('chartEvolution');
+  const revByMonth=[], depByMonth=[];
+  for(let m=1;m<=12;m++){
+    const key = year+'-'+String(m).padStart(2,'0');
+    let r=0; if(state.revenus[key]) REVENU_SOURCES.forEach(s=>r+=Number(state.revenus[key][s]||0));
+    revByMonth.push(r);
+    depByMonth.push(types.reduce((s,t)=>s+sumByType(t,year,m),0));
+  }
+  if(chartEvo) chartEvo.destroy();
+  chartEvo = new Chart(ctx2,{
+    type:'line',
+    data:{ labels:MOIS_LABELS, datasets:[
+      {label:'Revenus', data:revByMonth, borderColor:'#1F5C4A', backgroundColor:'rgba(31,92,74,.1)', tension:.3, fill:true},
+      {label:'Dépenses', data:depByMonth, borderColor:'#B23A2E', backgroundColor:'rgba(178,58,46,.08)', tension:.3, fill:true}
+    ]},
+    options:{
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+        tooltip:{
+          callbacks:{
+            afterLabel:(context)=>{
+              const idx = context.dataIndex;
+              if(idx===0) return '';
+              const arr = context.dataset.data;
+              const prev = Number(arr[idx-1]||0), curr = Number(arr[idx]||0);
+              if(prev===0) return curr>0 ? '(nouveau vs mois précédent)' : '';
+              const variation = (curr-prev)/prev*100;
+              const sign = variation>=0?'+':'';
+              return `${sign}${variation.toFixed(1)}% vs mois précédent`;
+            }
+          }
+        }
+      },
+      scales:{y:{ticks:{callback:v=>fmt(v)}}}
+    }
+  });
+}
+
+/* ======================= TRANSACTIONS ======================= */
+function populateTxSelects(){
+  const catSel = document.getElementById('txCategorie');
+  catSel.innerHTML = getAllCategories().map(([n,t])=>`<option value="${n}" data-type="${t}">${n}</option>`).join('');
+  catSel.addEventListener('change', ()=>{
+    const opt = catSel.selectedOptions[0];
+    document.getElementById('txType').innerHTML = `<option>${opt.dataset.type}</option>`;
+  });
+  catSel.dispatchEvent(new Event('change'));
+
+  const filterCat = document.getElementById('txFilterCat');
+  filterCat.innerHTML = '<option value="all">Toutes</option>' + getAllCategories().map(([n])=>`<option value="${n}">${n}</option>`).join('');
+}
+document.getElementById('txForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const cat = document.getElementById('txCategorie').value;
+  const txData = {
+    date:document.getElementById('txDate').value,
+    description:document.getElementById('txDescription').value||'(sans description)',
+    categorie:cat,
+    type:catType(cat),
+    montant:Number(document.getElementById('txMontant').value||0),
+    mode:document.getElementById('txMode').value,
+    reference:document.getElementById('txReference').value,
+    notes:document.getElementById('txNotes').value
+  };
+  if(!txData.date || !txData.montant){ return; }
+  if(editingTxId){
+    const idx = state.transactions.findIndex(t=>t.id===editingTxId);
+    if(idx>-1) state.transactions[idx] = {...state.transactions[idx], ...txData};
+    cancelTxEdit();
+  } else {
+    state.transactions.unshift({id:cuid(), ...txData});
+  }
+  await persist();
+  e.target.reset();
+  refreshYearOptions();
+  await checkAndSyncCategories();
+  renderAll();
+});
+let editingTxId = null;
+function startTxEdit(id){
+  const t = state.transactions.find(x=>x.id===id);
+  if(!t) return;
+  editingTxId = id;
+  document.getElementById('txDate').value = t.date;
+  document.getElementById('txMontant').value = t.montant;
+  document.getElementById('txCategorie').value = t.categorie;
+  document.getElementById('txCategorie').dispatchEvent(new Event('change'));
+  document.getElementById('txDescription').value = t.description;
+  document.getElementById('txMode').value = t.mode||'Espèces';
+  document.getElementById('txReference').value = t.reference||'';
+  document.getElementById('txNotes').value = t.notes||'';
+  document.getElementById('txFormTitle').textContent = '✏️ Modifier la transaction';
+  document.getElementById('txSubmitBtn').textContent = 'Enregistrer les modifications';
+  document.getElementById('txCancelEdit').style.display = 'inline-block';
+  document.getElementById('panel-transactions').scrollIntoView({behavior:'smooth'});
+}
+function cancelTxEdit(){
+  editingTxId = null;
+  document.getElementById('txFormTitle').textContent = 'Nouvelle transaction';
+  document.getElementById('txSubmitBtn').textContent = '+ Ajouter la transaction';
+  document.getElementById('txCancelEdit').style.display = 'none';
+  document.getElementById('txForm').reset();
+  document.getElementById('txDate').value = new Date().toISOString().slice(0,10);
+}
+document.getElementById('txCancelEdit').addEventListener('click', cancelTxEdit);
+document.getElementById('txFilterCat').addEventListener('change', renderTransactions);
+document.getElementById('txFilterType').addEventListener('change', renderTransactions);
+
+function renderTransactions(){
+  const fc = document.getElementById('txFilterCat').value;
+  const ft = document.getElementById('txFilterType').value;
+  let list = state.transactions.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  if(fc!=='all') list = list.filter(t=>t.categorie===fc);
+  if(ft!=='all') list = list.filter(t=>t.type===ft);
+  const body = document.getElementById('txBody');
+  if(!list.length){ body.innerHTML = `<tr><td colspan="8" class="empty">Aucune transaction pour ce filtre.</td></tr>`; return; }
+  body.innerHTML = list.map(t=>`
+    <tr>
+      <td>${t.date}</td>
+      <td>${t.description}</td>
+      <td>${t.categorie}</td>
+      <td><span class="tag ${t.type}">${t.type}</span></td>
+      <td class="num">${fmt(t.montant)}</td>
+      <td>${t.mode||''}</td>
+      <td>${t.reference||''}</td>
+      <td style="white-space:nowrap"><button class="btn secondary small" data-edit="${t.id}">Modifier</button> <button class="btn danger" data-id="${t.id}">Suppr.</button></td>
+    </tr>`).join('');
+  body.querySelectorAll('button.danger').forEach(b=>b.addEventListener('click', async ()=>{
+    if(editingTxId===b.dataset.id) cancelTxEdit();
+    state.transactions = state.transactions.filter(t=>t.id!==b.dataset.id);
+    await persist(); renderAll();
+  }));
+  body.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>startTxEdit(b.dataset.edit)));
+}
+
+/* ======================= BUDGET MENSUEL ======================= */
+function renderBudget(){
+  const {year,month} = currentFilter();
+  const container = document.getElementById('budgetGroups');
+  const types=['BESOINS','EPARGNE','DESIRS','INVEST'];
+  const revenuMensuelRef = REVENU_SOURCES.reduce((s,src)=>s+Number(state.revenusPrevision[src]||0),0);
+  const revenuPeriodeRef = month==='all' ? revenuMensuelRef*12 : revenuMensuelRef;
+  container.innerHTML = types.map(type=>{
+    const cats = getAllCategories().filter(c=>c[1]===type);
+    let totalPrevu=0, totalReal=0;
+    const rows = cats.map(([name])=>{
+      const prevuMensuel = Number(state.budgets[name]||0);
+      const prevu = month==='all' ? prevuMensuel*12 : prevuMensuel;
+      const real = sumByCat(name,year,month);
+      totalPrevu+=prevu; totalReal+=real;
+      const ecart = prevu-real;
+      const consomme = prevu>0? real/prevu : (real>0?1:0);
+      const status = prevu===0 ? '—' : (consomme<=1 ? '✅ Respecté' : '🔴 Dépassé');
+      return `<tr>
+        <td>${name}</td>
+        <td class="num"><input type="number" data-cat="${name}" value="${prevuMensuel}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+        <td class="num">${fmt(real)}</td>
+        <td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td>
+        <td class="num">${prevu>0?pct(consomme):'—'}</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('');
+    const targetPct = getGroupTarget(type);
+    const partPrevu = revenuPeriodeRef>0 ? totalPrevu/revenuPeriodeRef : 0;
+    const depasseRegle = revenuPeriodeRef>0 && totalPrevu > (revenuPeriodeRef*targetPct);
+    const warningBadge = depasseRegle
+      ? `<span class="badge warn" style="margin-left:10px" title="Ceci est informatif uniquement — vous pouvez continuer à modifier vos budgets librement">⚠️ Budget prévu à ${pct(partPrevu)} du revenu, au-delà de la règle des ${Math.round(targetPct*100)}%</span>`
+      : '';
+    return `<div class="section-title">${GROUP_LABEL[type]} — Total prévu ${fmt(totalPrevu)} · Réalisé ${fmt(totalReal)}${warningBadge}</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Poste</th><th class="num">Budget/mois (<span class="cur-label">FCFA</span>)</th><th class="num">Réalisé période</th><th class="num">Écart</th><th class="num">% Réalisé</th><th>Statut</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  }).join('');
+  container.querySelectorAll('input[data-cat]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      state.budgets[inp.dataset.cat] = Number(inp.value||0);
+      await persist(); renderAll();
+    });
+  });
+}
+
+/* ======================= REVENUS ======================= */
+function renderRevenus(){
+  const {year} = currentFilter();
+  const body = document.getElementById('revenusBody');
+  let monthTotals = new Array(12).fill(0);
+  body.innerHTML = REVENU_SOURCES.map(src=>{
+    let rowTotal=0;
+    const cells = [];
+    for(let m=1;m<=12;m++){
+      const key = year+'-'+String(m).padStart(2,'0');
+      const val = state.revenus[key] ? Number(state.revenus[key][src]||0) : 0;
+      rowTotal+=val; monthTotals[m-1]+=val;
+      cells.push(`<td class="num"><input type="number" data-src="${src}" data-month="${m}" value="${val||''}" placeholder="0" style="width:78px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-family:var(--mono);font-size:12px"></td>`);
+    }
+    const prevision = Number(state.revenusPrevision[src]||0);
+    return `<tr><td>${src}</td>${cells.join('')}<td class="num" style="font-weight:700">${fmt(rowTotal)}</td>
+      <td class="num"><input type="number" data-prevision="${src}" value="${prevision||''}" style="width:90px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-family:var(--mono);font-size:12px"></td></tr>`;
+  }).join('');
+  const grandTotal = monthTotals.reduce((a,b)=>a+b,0);
+  document.getElementById('revenusFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td>TOTAL REVENUS</td>${monthTotals.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num">${fmt(grandTotal)}</td><td></td></tr>`;
+
+  body.querySelectorAll('input[data-src]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const key = year+'-'+String(inp.dataset.month).padStart(2,'0');
+      if(!state.revenus[key]) state.revenus[key]={};
+      state.revenus[key][inp.dataset.src] = Number(inp.value||0);
+      await persist(); renderAll();
+    });
+  });
+  body.querySelectorAll('input[data-prevision]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      state.revenusPrevision[inp.dataset.prevision] = Number(inp.value||0);
+      await persist(); renderAll();
+    });
+  });
+}
+
+/* ======================= CREDIT BANCAIRE ======================= */
+function monthsBetween(d1,d2){
+  return (d2.getFullYear()-d1.getFullYear())*12 + (d2.getMonth()-d1.getMonth());
+}
+function computeAmortization(){
+  const c = state.credit;
+  const P = Number(c.montant||0), annual = Number(c.taux||0)/100, n = Number(c.duree||0);
+  const r = annual/12;
+  const mensualite = r>0 ? P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1) : (n>0?P/n:0);
+  let solde = P;
+  const schedule=[];
+  const start = new Date(c.date||'2025-01-01');
+  for(let i=1;i<=n;i++){
+    const interet = solde*r;
+    const capital = mensualite-interet;
+    const soldeFin = Math.max(solde-capital,0);
+    const d = new Date(start); d.setMonth(d.getMonth()+(i-1));
+    schedule.push({num:i,date:d.toISOString().slice(0,10),soldeDebut:solde,mensualite,interet,capital,soldeFin});
+    solde = soldeFin;
+  }
+  return {mensualite, schedule};
+}
+function renderCredit(){
+  const c = state.credit;
+  document.getElementById('crType').value = c.type||'';
+  document.getElementById('crReference').value = c.reference||'';
+  document.getElementById('crMontant').value = c.montant||0;
+  document.getElementById('crTaux').value = c.taux||0;
+  document.getElementById('crDuree').value = c.duree||0;
+  document.getElementById('crDate').value = c.date||'';
+
+  const {mensualite, schedule} = computeAmortization();
+  const coutTotal = mensualite*Number(c.duree||0);
+  const coutInterets = coutTotal-Number(c.montant||0);
+  const {year,month} = currentFilter();
+  const revenuMensuelRef = REVENU_SOURCES.reduce((s,src)=>s+Number(state.revenusPrevision[src]||0),0);
+  const tauxEndettement = revenuMensuelRef>0 ? mensualite/revenuMensuelRef : 0;
+
+  document.getElementById('crSynthese').innerHTML = `
+    <div class="kpi"><span class="label">Mensualité (${devise()})</span><span class="value">${fmt(mensualite)}</span></div>
+    <div class="kpi"><span class="label">Coût total du crédit</span><span class="value">${fmt(coutTotal)}</span></div>
+    <div class="kpi"><span class="label">Coût total des intérêts</span><span class="value">${fmt(coutInterets)}</span></div>
+    <div class="kpi"><span class="label">Taux d'endettement (vs prévision revenus)</span><span class="value">${revenuMensuelRef>0?pct(tauxEndettement):'—'}</span></div>
+  `;
+
+  const start = new Date(c.date||'2025-01-01');
+  const today = new Date();
+  const dueCount = Math.min(Math.max(monthsBetween(start,today)+1,0), Number(c.duree||0));
+  const theoriqueCumule = mensualite*dueCount;
+  // Si une référence est renseignée, ne comptabiliser que les transactions liées précisément à ce crédit.
+  // Sinon (rétrocompatibilité), comptabiliser toutes les transactions de la catégorie.
+  const remboursements = state.transactions.filter(t=>t.categorie==='Remboursement crédit bancaire');
+  const reelCumule = (c.reference
+    ? remboursements.filter(t=>t.reference===c.reference)
+    : remboursements
+  ).reduce((s,t)=>s+Number(t.montant),0);
+  const ecart = reelCumule-theoriqueCumule;
+  const capitalRestant = schedule[dueCount-1] ? schedule[dueCount-1].soldeFin : Number(c.montant||0);
+  const statut = ecart>=0 ? '✅ À jour' : '🔴 En retard';
+
+  document.getElementById('crSuivi').innerHTML = `
+    <div class="card"><div class="kpi"><span class="label">Mensualités dues à ce jour</span><span class="value">${dueCount}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">Montant théorique cumulé</span><span class="value">${fmt(theoriqueCumule)}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">Montant réellement payé${c.reference?' (réf. '+c.reference+')':''}</span><span class="value">${fmt(reelCumule)}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">Statut</span><span class="value" style="font-size:13px">${statut} · Capital restant ${fmt(capitalRestant)}</span></div></div>
+  `;
+
+  document.getElementById('crAmort').innerHTML = schedule.map(s=>`
+    <tr><td>${s.num}</td><td>${s.date}</td><td class="num">${fmt(s.soldeDebut)}</td><td class="num">${fmt(s.mensualite)}</td>
+    <td class="num">${fmt(s.interet)}</td><td class="num">${fmt(s.capital)}</td><td class="num">${fmt(s.soldeFin)}</td></tr>`).join('');
+}
+document.getElementById('crSave').addEventListener('click', async ()=>{
+  state.credit = {
+    type:document.getElementById('crType').value,
+    reference:document.getElementById('crReference').value,
+    montant:Number(document.getElementById('crMontant').value||0),
+    taux:Number(document.getElementById('crTaux').value||0),
+    duree:Number(document.getElementById('crDuree').value||0),
+    date:document.getElementById('crDate').value
+  };
+  await persist(); renderCredit();
+});
+
+/* ======================= PARAMETRES ======================= */
+function renderParametres(){
+  const s = state.settings;
+  const revenuMensuelRef = REVENU_SOURCES.reduce((sum,src)=>sum+Number(state.revenusPrevision[src]||0),0);
+  const allocRows = [
+    {key:'allocBesoins', label:'🏠 Besoins Essentiels', desc:'Loyer, alimentation, transport, santé, services, crédit bancaire'},
+    {key:'allocEpargne', label:'💰 Épargne & Invest.', desc:'Épargne urgence, placements, livret, retraite, construction'},
+    {key:'allocDesirs', label:'🎯 Désirs & Loisirs', desc:'Restaurants, voyages, shopping, cadeaux, abonnements'},
+    {key:'allocInvest', label:'📈 Investissements', desc:'Mobilier, équipement, formation, bourse, perfectionnement'}
+  ];
+  document.getElementById('paramAllocBody').innerHTML = allocRows.map(r=>`
+    <tr><td>${r.label}</td>
+    <td class="num"><input type="number" step="0.01" min="0" max="1" data-alloc="${r.key}" value="${s[r.key]}" style="width:80px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+    <td class="num">${fmt(revenuMensuelRef*Number(s[r.key]||0))}</td>
+    <td style="font-size:12.5px;color:var(--ink-soft)">${r.desc}</td></tr>`).join('');
+  const total = allocRows.reduce((sum,r)=>sum+Number(s[r.key]||0),0);
+  const totalOk = Math.abs(total-1)<0.001;
+  document.getElementById('paramAllocTotal').innerHTML = `<td>TOTAL</td><td class="num">${pct(total)}</td><td class="num">${fmt(revenuMensuelRef*total)}</td><td>${totalOk?'✅ Total = 100% — Configuration valide':'🔴 Le total doit faire 100%'}</td>`;
+
+  document.getElementById('paramNom').value = s.nom;
+  document.getElementById('paramDevise').value = s.devise;
+  document.getElementById('paramTolerance').value = s.tolerance;
+  document.getElementById('paramMoisUrgence').value = s.moisFondsUrgence;
+  document.getElementById('paramTauxEndett').value = s.tauxEndettMax;
+
+  document.getElementById('paramAllocBody').querySelectorAll('[data-alloc]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      state.settings[inp.dataset.alloc] = Number(inp.value||0);
+      await persist(); renderAll();
+    });
+  });
+  renderTabOrderUI();
+}
+document.getElementById('paramSave').addEventListener('click', async ()=>{
+  state.settings.nom = document.getElementById('paramNom').value || '';
+  state.settings.devise = document.getElementById('paramDevise').value || 'FCFA';
+  state.settings.tolerance = Number(document.getElementById('paramTolerance').value||0.05);
+  state.settings.moisFondsUrgence = Number(document.getElementById('paramMoisUrgence').value||3);
+  state.settings.tauxEndettMax = Number(document.getElementById('paramTauxEndett').value||0.33);
+  await persist(); renderAll();
+});
+
+/* ======================= MULTI-CREDITS ======================= */
+function computeMultiCreditsRows(){
+  const remboursements = state.transactions.filter(t=>t.categorie==='Remboursement crédit bancaire');
+  return state.multiCredits.map(c=>{
+    const P = Number(c.montantInitial||0);
+    const capital = Number(c.capitalRestant||0);
+    const r = Number(c.taux||0)/100/12;
+    const n = Math.max(Number(c.moisRestants||0),0);
+    let mensualite = 0;
+    if(capital>0 && n>0){
+      mensualite = r>0 ? capital*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1) : capital/n;
+    }
+    const coutTotal = mensualite*n;
+    const coutInterets = coutTotal-capital;
+    const dateFin = new Date(); dateFin.setMonth(dateFin.getMonth()+n);
+    const statut = capital<=0 ? '✅ Soldé' : (n<=0 ? '⚠️ Échéance atteinte' : '🔵 En cours');
+    const reelPaye = c.reference ? remboursements.filter(t=>t.reference===c.reference).reduce((s,t)=>s+Number(t.montant),0) : 0;
+    return {...c, montantInitial:P, capitalRestant:capital, mensualite, coutTotal, coutInterets:Math.max(coutInterets,0), moisRestants:n, dateFin, statut, reelPaye};
+  });
+}
+function renderMultiCredits(){
+  const rows = computeMultiCreditsRows();
+  document.getElementById('mcBody').innerHTML = rows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td><input type="text" data-mc-field="intitule" data-mc-id="${r.id}" value="${r.intitule}" style="width:120px;border:1px solid var(--line);border-radius:4px;padding:4px 6px"></td>
+      <td><input type="text" data-mc-field="reference" data-mc-id="${r.id}" value="${r.reference||''}" placeholder="Ex : CRED-02" style="width:100px;border:1px solid var(--line);border-radius:4px;padding:4px 6px"></td>
+      <td class="num"><input type="number" data-mc-field="montantInitial" data-mc-id="${r.id}" value="${r.montantInitial||''}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+      <td class="num"><input type="number" data-mc-field="capitalRestant" data-mc-id="${r.id}" value="${r.capitalRestant||''}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+      <td class="num"><input type="number" step="0.01" data-mc-field="taux" data-mc-id="${r.id}" value="${r.taux||''}" style="width:70px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+      <td class="num">${fmt(r.mensualite)}</td>
+      <td class="num">${r.reference?fmt(r.reelPaye):'—'}</td>
+      <td class="num"><input type="number" data-mc-field="moisRestants" data-mc-id="${r.id}" value="${r.moisRestants||''}" style="width:70px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+      <td class="num">${fmt(r.coutTotal)}</td>
+      <td class="num">${fmt(r.coutInterets)}</td>
+      <td>${r.statut}</td>
+    </tr>`).join('');
+  const totalMensualite = rows.reduce((s,r)=>s+r.mensualite,0);
+  const totalCoutTotal = rows.reduce((s,r)=>s+r.coutTotal,0);
+  const totalInterets = rows.reduce((s,r)=>s+r.coutInterets,0);
+  document.getElementById('mcFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="6">TOTAL</td><td class="num">${fmt(totalMensualite)}</td><td></td><td></td><td class="num">${fmt(totalCoutTotal)}</td><td class="num">${fmt(totalInterets)}</td><td></td></tr>`;
+
+  const revenuMensuelRef = REVENU_SOURCES.reduce((s,src)=>s+Number(state.revenusPrevision[src]||0),0);
+  const {mensualite:mensualiteUnique} = computeAmortization();
+  const totalToutesMensualites = totalMensualite + mensualiteUnique;
+  const tauxGlobal = revenuMensuelRef>0 ? totalToutesMensualites/revenuMensuelRef : 0;
+  const seuil = (state.settings&&state.settings.tauxEndettMax)||0.33;
+  const ok = tauxGlobal<=seuil;
+  document.getElementById('mcEndettement').innerHTML = `
+    <div class="kpi"><span class="label">Total mensualités (Multi-Crédits + Crédit bancaire)</span><span class="value">${fmt(totalToutesMensualites)}</span></div>
+    <div class="kpi"><span class="label">Revenu mensuel de référence</span><span class="value">${fmt(revenuMensuelRef)}</span></div>
+    <div class="kpi"><span class="label">Taux d'endettement global</span><span class="value" style="color:${ok?'var(--success)':'var(--danger)'}">${pct(tauxGlobal)} ${ok?'✅ Maîtrisé':'🔴 Dépasse le seuil de '+pct(seuil)}</span></div>
+  `;
+  document.getElementById('mcBody').querySelectorAll('[data-mc-field]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const c = state.multiCredits.find(x=>x.id===inp.dataset.mcId);
+      if(!c) return;
+      const field = inp.dataset.mcField;
+      c[field] = (field==='intitule'||field==='reference') ? inp.value : Number(inp.value||0);
+      await persist(); renderMultiCredits(); renderAlertes();
+    });
+  });
+  renderAvalancheOrder();
+}
+
+/* ======================= STRATEGIE AVALANCHE ======================= */
+// Combine le Crédit bancaire unique et les Multi-Crédits actifs, triés par taux décroissant :
+// tout euro/FCFA supplémentaire est dirigé en priorité vers le crédit le plus coûteux (méthode "avalanche"),
+// ce qui minimise mathématiquement le total des intérêts payés par rapport à toute autre répartition.
+function getUniqueCreditCurrentBalance(){
+  const {schedule, mensualite} = computeAmortization();
+  const c = state.credit;
+  const start = new Date(c.date||'2025-01-01');
+  const today = new Date();
+  const dueCount = Math.min(Math.max(monthsBetween(start,today)+1,0), Number(c.duree||0));
+  const solde = schedule[dueCount-1] ? schedule[dueCount-1].soldeFin : Number(c.montant||0);
+  return { solde, mensualite, taux:Number(c.taux||0), tauxMensuel:Number(c.taux||0)/100/12 };
+}
+function computeAvalancheDebts(){
+  const debts = [];
+  const cu = getUniqueCreditCurrentBalance();
+  if(cu.solde>0 && cu.mensualite>0){
+    debts.push({ label: state.credit.type||'Crédit bancaire principal', taux:cu.taux, tauxMensuel:cu.tauxMensuel, solde:cu.solde, mensualite:cu.mensualite });
+  }
+  computeMultiCreditsRows().forEach(r=>{
+    if(Number(r.capitalRestant||0)>0 && r.mensualite>0){
+      debts.push({ label:r.intitule, taux:Number(r.taux||0), tauxMensuel:Number(r.taux||0)/100/12, solde:Number(r.capitalRestant||0), mensualite:r.mensualite });
+    }
+  });
+  debts.sort((a,b)=>b.taux-a.taux);
+  return debts;
+}
+function renderAvalancheOrder(){
+  const debts = computeAvalancheDebts();
+  const body = document.getElementById('avalancheOrderBody');
+  if(!body) return;
+  body.innerHTML = debts.length ? debts.map((d,i)=>`
+    <tr><td>${i+1}${i===0?' 🔥':''}</td><td>${d.label}</td><td class="num">${d.taux}%</td><td class="num">${fmt(d.solde)}</td><td class="num">${fmt(d.mensualite)}</td></tr>
+  `).join('') : `<tr><td colspan="5" class="empty">Aucun crédit actif à prioriser pour l'instant.</td></tr>`;
+}
+function simulateAvalancheRun(debtsInput, extra){
+  // Clone profond pour ne pas altérer les données réelles pendant la simulation
+  const debts = debtsInput.map(d=>({...d}));
+  let mois = 0, interetsTotal = 0;
+  const CAP = 600; // 50 ans, garde-fou anti boucle infinie
+  while(debts.some(d=>d.solde>0) && mois<CAP){
+    mois++;
+    let extraDispo = extra;
+    // 1) mensualité minimale de chaque crédit (intérêts + capital)
+    debts.forEach(d=>{
+      if(d.solde<=0) return;
+      const interet = d.solde*d.tauxMensuel;
+      const principal = Math.min(d.mensualite-interet, d.solde);
+      d.solde = Math.max(d.solde-principal, 0);
+      interetsTotal += interet;
+    });
+    // 2) effort supplémentaire dirigé en cascade vers le crédit au taux le plus élevé restant (ordre = ordre d'entrée, déjà trié)
+    for(const d of debts){
+      if(extraDispo<=0) break;
+      if(d.solde<=0) continue;
+      const applied = Math.min(extraDispo, d.solde);
+      d.solde -= applied;
+      extraDispo -= applied;
+    }
+  }
+  return { mois: mois>=CAP?null:mois, interetsTotal };
+}
+document.getElementById('avalancheSimulate').addEventListener('click', ()=>{
+  const debts = computeAvalancheDebts();
+  const extra = Number(document.getElementById('avalancheExtra').value||0);
+  const resultEl = document.getElementById('avalancheResult');
+  if(!debts.length){
+    resultEl.innerHTML = `<p class="small-note">Aucun crédit actif à simuler.</p>`;
+    return;
+  }
+  const sansEffort = simulateAvalancheRun(debts, 0);
+  const avecEffort = simulateAvalancheRun(debts, extra);
+  const moisGagnes = (sansEffort.mois!==null && avecEffort.mois!==null) ? sansEffort.mois-avecEffort.mois : null;
+  const interetsEconomises = sansEffort.interetsTotal - avecEffort.interetsTotal;
+  resultEl.innerHTML = `
+    <div class="grid2">
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Sans effort supplémentaire</div>
+        <div class="kpi"><span class="label">Durée jusqu'à solde 0</span><span class="value">${sansEffort.mois!==null?sansEffort.mois+' mois':'> 50 ans'}</span></div>
+        <div class="kpi"><span class="label">Total intérêts payés (tous crédits)</span><span class="value">${fmt(sansEffort.interetsTotal)}</span></div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-top:0">Avec ${fmt(extra)} ${devise()}/mois en Avalanche</div>
+        <div class="kpi"><span class="label">Durée jusqu'à solde 0</span><span class="value pos">${avecEffort.mois!==null?avecEffort.mois+' mois':'> 50 ans'}</span></div>
+        <div class="kpi"><span class="label">Total intérêts payés (tous crédits)</span><span class="value pos">${fmt(avecEffort.interetsTotal)}</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="kpi"><span class="label">🏆 Mois gagnés grâce à la stratégie Avalanche</span><span class="value pos" style="font-size:18px">${moisGagnes!==null?moisGagnes+' mois':'—'}</span></div>
+      <div class="kpi"><span class="label">💰 Intérêts économisés</span><span class="value pos" style="font-size:18px">${fmt(interetsEconomises)}</span></div>
+    </div>
+  `;
+});
+
+/* ======================= MAINTENANCE ======================= */
+function computeMaintenanceRows(){
+  const today = new Date();
+  return state.maintenance.map(m=>{
+    if(m.mode==='km'){
+      const kmRestant = Number(m.intervalleKm||0) - (Number(m.kmActuel||0) - Number(m.kmDerniere||0));
+      const statut = kmRestant<0 ? '🔴 En retard' : (kmRestant<=500 ? '🟠 Urgent' : (kmRestant<=2000 ? '🟡 À venir' : '✅ OK'));
+      return {...m, kmRestant, statut, prochaineLabel:`Dans ${fmt(kmRestant)} km`, restantLabel:`${fmt(kmRestant)} km`};
+    }
+    const derniere = new Date(m.derniere||today);
+    const prochaine = new Date(derniere); prochaine.setMonth(prochaine.getMonth()+Number(m.intervalle||12));
+    const joursRestants = Math.round((prochaine-today)/86400000);
+    const statut = joursRestants<0 ? '🔴 En retard' : (joursRestants<=30 ? '🟠 Urgent' : (joursRestants<=90 ? '🟡 À venir' : '✅ OK'));
+    return {...m, prochaine, joursRestants, statut, prochaineLabel:prochaine.toISOString().slice(0,10), restantLabel:`${joursRestants} j`};
+  });
+}
+function renderMaintenance(){
+  const rows = computeMaintenanceRows();
+  document.getElementById('maintBody').innerHTML = rows.length ? rows.map(m=>`
+    <tr>
+      <td>${m.nom}</td><td>${m.categorie||''}</td>
+      <td>${m.mode==='km'?'🚗 Km':'📅 Temps'}</td>
+      <td class="num">${m.mode==='km'?fmt(m.intervalleKm)+' km':m.intervalle+' mois'}</td>
+      <td>${m.mode==='km'?fmt(m.kmDerniere)+' km':(m.derniere||'')}</td>
+      <td>${m.prochaineLabel}</td>
+      <td class="num" style="color:${(m.mode==='km'?m.kmRestant:m.joursRestants)<0?'var(--danger)':'inherit'}">${m.restantLabel}</td>
+      <td>${m.statut}</td>
+      <td class="num">${fmt(m.coutEstime)}</td>
+      <td class="num"><input type="number" data-maint-cout="${m.id}" value="${m.coutReel||''}" placeholder="0" style="width:80px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-family:var(--mono)"></td>
+      <td>${m.responsable||''}</td><td style="font-size:12px">${m.notes||''}</td>
+      <td style="white-space:nowrap">${m.mode==='km'?`<button class="btn secondary small" data-maint-km="${m.id}">MAJ km</button> `:''}<button class="btn danger" data-maint-del="${m.id}">Suppr.</button></td>
+    </tr>`).join('') : `<tr><td colspan="13" class="empty">Aucun équipement suivi pour l'instant.</td></tr>`;
+
+  const recap = {retard:0, urgent:0, avenir:0, coutTotal:0};
+  rows.forEach(m=>{
+    if(m.statut==='🔴 En retard') recap.retard++;
+    else if(m.statut==='🟠 Urgent') recap.urgent++;
+    else if(m.statut==='🟡 À venir') recap.avenir++;
+    recap.coutTotal += Number(m.coutEstime||0);
+  });
+  document.getElementById('maintRecap').innerHTML = `
+    <div class="card"><div class="kpi"><span class="label">🔴 En retard</span><span class="value neg">${recap.retard}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">🟠 Urgents</span><span class="value">${recap.urgent}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">🟡 À venir</span><span class="value">${recap.avenir}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">💰 Coûts prévisionnels</span><span class="value">${fmt(recap.coutTotal)}</span></div></div>
+  `;
+  document.getElementById('maintBody').querySelectorAll('[data-maint-cout]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const m = state.maintenance.find(x=>x.id===inp.dataset.maintCout);
+      if(m){ m.coutReel = Number(inp.value||0); await persist(); }
+    });
+  });
+  document.getElementById('maintBody').querySelectorAll('[data-maint-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      state.maintenance = state.maintenance.filter(m=>m.id!==btn.dataset.maintDel);
+      await persist(); renderMaintenance();
+    });
+  });
+  document.getElementById('maintBody').querySelectorAll('[data-maint-km]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const m = state.maintenance.find(x=>x.id===btn.dataset.maintKm);
+      if(!m) return;
+      const nouveauKm = prompt(`Nouveau kilométrage actuel pour "${m.nom}" (dernier relevé : ${fmt(m.kmActuel)} km) :`, m.kmActuel||0);
+      if(nouveauKm===null) return;
+      const val = Number(nouveauKm);
+      if(!isNaN(val) && val>=0){ m.kmActuel = val; await persist(); renderMaintenance(); }
+    });
+  });
+}
+function toggleMaintFields(){
+  const isKm = document.getElementById('maintMode').value==='km';
+  document.getElementById('maintTempsFields').style.display = isKm ? 'none' : '';
+  document.getElementById('maintKmFields1').style.display = isKm ? '' : 'none';
+  document.getElementById('maintKmFields2').style.display = isKm ? '' : 'none';
+  document.getElementById('maintKmFields3').style.display = isKm ? '' : 'none';
+}
+document.getElementById('maintMode').addEventListener('change', toggleMaintFields);
+document.getElementById('maintForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const mode = document.getElementById('maintMode').value;
+  const m = {
+    id:cuid(),
+    nom:document.getElementById('maintNom').value,
+    categorie:document.getElementById('maintCategorie').value,
+    mode:mode,
+    intervalle:Number(document.getElementById('maintIntervalle').value||12),
+    intervalleKm:Number(document.getElementById('maintIntervalleKm').value||10000),
+    derniere:document.getElementById('maintDerniere').value || new Date().toISOString().slice(0,10),
+    kmDerniere:Number(document.getElementById('maintKmDerniere').value||0),
+    kmActuel:Number(document.getElementById('maintKmActuel').value||0),
+    coutEstime:Number(document.getElementById('maintCoutEstime').value||0),
+    coutReel:0,
+    responsable:document.getElementById('maintResponsable').value,
+    notes:document.getElementById('maintNotes').value
+  };
+  if(!m.nom) return;
+  state.maintenance.push(m);
+  await persist(); e.target.reset(); toggleMaintFields(); renderMaintenance();
+});
+
+/* ======================= OBJECTIFS EPARGNE ======================= */
+function computeObjectifsRows(){
+  const today = new Date();
+  return state.objectifs.map(o=>{
+    const epargne = o.categorieLiee ? realiseForDesignation(o.categorieLiee) : Number(o.epargneManuel||0);
+    const cible = Number(o.montantCible||0);
+    const reste = Math.max(cible-epargne,0);
+    const pctAtteint = cible>0 ? epargne/cible : 0;
+    const dateCible = o.dateCible ? new Date(o.dateCible) : null;
+    const moisRestants = dateCible ? Math.max(monthsBetween(today,dateCible),0) : null;
+    const depotNecessaire = (moisRestants && moisRestants>0) ? reste/moisRestants : reste;
+    const echu = dateCible && dateCible<today && reste>0;
+    const statut = reste<=0 ? '✅ Atteint' : (echu ? '⏰ Échu' : (moisRestants!==null && moisRestants<=3 ? '🔴 À accélérer' : '🔵 En cours'));
+    const filled = Math.round(pctAtteint*10);
+    const jauge = '█'.repeat(Math.min(filled,10)) + '░'.repeat(Math.max(10-filled,0)) + ` ${Math.round(pctAtteint*100)}%`;
+    return {...o, epargne, cible, reste, pctAtteint, moisRestants, depotNecessaire, statut, jauge};
+  });
+}
+function populateObjCategorieLiee(){
+  const sel = document.getElementById('objCategorieLiee');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Aucune (saisie manuelle) —</option>' + getAllCategories().map(([n])=>`<option value="${n}">${n}</option>`).join('');
+  sel.value = current;
+}
+function renderObjectifs(){
+  populateObjCategorieLiee();
+  const rows = computeObjectifsRows();
+  document.getElementById('objBody').innerHTML = rows.length ? rows.map((o,i)=>`
+    <tr>
+      <td>${i+1}</td><td>${o.nom}</td><td>${o.categorie||''}${o.categorieLiee?`<br><span style="font-size:10.5px;color:var(--ink-soft)">🔗 ${o.categorieLiee}</span>`:''}</td>
+      <td class="num">${fmt(o.cible)}</td>
+      <td class="num">${o.categorieLiee
+        ? `${fmt(o.epargne)} <span title="Calculé automatiquement depuis les transactions" style="font-size:10px;color:var(--ink-soft)">🔗auto</span>`
+        : `<input type="number" data-obj-epargne="${o.id}" value="${o.epargne||''}" placeholder="0" style="width:90px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-family:var(--mono)">`}</td>
+      <td class="num">${fmt(o.reste)}</td>
+      <td class="num">${pct(o.pctAtteint)}</td>
+      <td style="font-family:var(--mono);font-size:11.5px">${o.jauge}</td>
+      <td>${o.dateCible||''}</td>
+      <td class="num">${fmt(o.depotNecessaire)}</td>
+      <td>${o.statut}</td>
+      <td>${o.priorite}</td>
+      <td><button class="btn danger" data-obj-del="${o.id}">Suppr.</button></td>
+    </tr>`).join('') : `<tr><td colspan="13" class="empty">Aucun objectif défini pour l'instant.</td></tr>`;
+  const totalCible = rows.reduce((s,o)=>s+o.cible,0);
+  const totalEpargne = rows.reduce((s,o)=>s+o.epargne,0);
+  const totalReste = rows.reduce((s,o)=>s+o.reste,0);
+  document.getElementById('objFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="3">TOTAL OBJECTIFS</td><td class="num">${fmt(totalCible)}</td><td class="num">${fmt(totalEpargne)}</td><td class="num">${fmt(totalReste)}</td><td class="num">${totalCible>0?pct(totalEpargne/totalCible):'—'}</td><td colspan="5"></td></tr>`;
+
+  document.getElementById('objBody').querySelectorAll('[data-obj-epargne]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const o = state.objectifs.find(x=>x.id===inp.dataset.objEpargne);
+      if(o){ o.epargneManuel = Number(inp.value||0); await persist(); renderObjectifs(); }
+    });
+  });
+  document.getElementById('objBody').querySelectorAll('[data-obj-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      state.objectifs = state.objectifs.filter(o=>o.id!==btn.dataset.objDel);
+      await persist(); renderObjectifs();
+    });
+  });
+}
+document.getElementById('objForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const o = {
+    id:cuid(),
+    nom:document.getElementById('objNom').value,
+    categorie:document.getElementById('objCategorie').value,
+    categorieLiee:document.getElementById('objCategorieLiee').value,
+    montantCible:Number(document.getElementById('objMontantCible').value||0),
+    epargneManuel:Number(document.getElementById('objEpargneManuel').value||0),
+    dateCible:document.getElementById('objDateCible').value,
+    priorite:document.getElementById('objPriorite').value,
+    note:document.getElementById('objNote').value
+  };
+  if(!o.nom || !o.montantCible) return;
+  state.objectifs.push(o);
+  await persist(); e.target.reset(); renderObjectifs();
+});
+
+/* ======================= PATRIMOINE NET ======================= */
+function renderPatrimoine(){
+  // Passif "Crédit bancaire principal" auto-calculé depuis Crédit bancaire
+  const {schedule} = computeAmortization();
+  const today = new Date();
+  const start = new Date(state.credit.date||'2025-01-01');
+  const dueCount = Math.min(Math.max(monthsBetween(start,today)+1,0), Number(state.credit.duree||0));
+  const capitalRestantCredit = schedule[dueCount-1] ? schedule[dueCount-1].soldeFin : Number(state.credit.montant||0);
+  const capitalRestantMulti = computeMultiCreditsRows().reduce((s,r)=>s+Number(r.capitalRestant||0),0);
+
+  const actifsBody = document.getElementById('actifsBody');
+  let totalActifs = 0;
+  actifsBody.innerHTML = state.patrimoine.actifs.map(a=>{
+    totalActifs += Number(a.valeur||0);
+    return `<tr><td>${a.nom}</td><td>${a.categorie||''}</td><td class="num">${fmt(a.valeur)}</td><td><button class="btn danger" data-actif-del="${a.id}">Suppr.</button></td></tr>`;
+  }).join('');
+  document.getElementById('actifsFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="2">TOTAL ACTIFS</td><td class="num">${fmt(totalActifs)}</td><td></td></tr>`;
+
+  const passifsBody = document.getElementById('passifsBody');
+  let totalPassifsManuel = state.patrimoine.passifs.reduce((s,p)=>s+Number(p.valeur||0),0);
+  let rowsHtml = `<tr><td>Crédit bancaire principal</td><td>Crédit</td><td class="num">${fmt(capitalRestantCredit)}</td><td style="color:var(--ink-soft);font-size:11px">auto</td></tr>`;
+  if(capitalRestantMulti>0) rowsHtml += `<tr><td>Multi-Crédits (cumul)</td><td>Crédit</td><td class="num">${fmt(capitalRestantMulti)}</td><td style="color:var(--ink-soft);font-size:11px">auto</td></tr>`;
+  rowsHtml += state.patrimoine.passifs.map(p=>`<tr><td>${p.nom}</td><td>${p.categorie||''}</td><td class="num">${fmt(p.valeur)}</td><td><button class="btn danger" data-passif-del="${p.id}">Suppr.</button></td></tr>`).join('');
+  passifsBody.innerHTML = rowsHtml;
+  const totalPassifs = capitalRestantCredit + capitalRestantMulti + totalPassifsManuel;
+  document.getElementById('passifsFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="2">TOTAL PASSIFS</td><td class="num">${fmt(totalPassifs)}</td><td></td></tr>`;
+
+  const patrimoineNet = totalActifs - totalPassifs;
+
+  // Bilan par catégorie (regroupement des postes actifs/passifs, y compris les passifs auto-liés au crédit)
+  const actifsParCat = {};
+  state.patrimoine.actifs.forEach(a=>{ const c=a.categorie||'Divers'; actifsParCat[c]=(actifsParCat[c]||0)+Number(a.valeur||0); });
+  const passifsParCat = {'Crédit': capitalRestantCredit + capitalRestantMulti};
+  state.patrimoine.passifs.forEach(p=>{ const c=p.categorie||'Divers'; passifsParCat[c]=(passifsParCat[c]||0)+Number(p.valeur||0); });
+  const actifCats = Object.keys(actifsParCat);
+  const passifCats = Object.keys(passifsParCat);
+  const maxRows = Math.max(actifCats.length, passifCats.length, 1);
+  let bilanRows = '';
+  for(let i=0;i<maxRows;i++){
+    const ac = actifCats[i], pc = passifCats[i];
+    bilanRows += `<tr>
+      <td>${ac||''}</td><td class="num">${ac?fmt(actifsParCat[ac]):''}</td>
+      <td>${pc||''}</td><td class="num">${pc?fmt(passifsParCat[pc]):''}</td>
+    </tr>`;
+  }
+  bilanRows += `<tr style="font-weight:700;background:var(--bg)"><td>TOTAL ACTIFS</td><td class="num">${fmt(totalActifs)}</td><td>TOTAL PASSIFS</td><td class="num">${fmt(totalPassifs)}</td></tr>`;
+  document.getElementById('bilanBody').innerHTML = bilanRows;
+
+  document.getElementById('patrimoineNetCard').innerHTML = `
+    <div class="kpi"><span class="label">Total actifs</span><span class="value pos">${fmt(totalActifs)}</span></div>
+    <div class="kpi"><span class="label">Total passifs</span><span class="value neg">${fmt(totalPassifs)}</span></div>
+    <div class="kpi"><span class="label">Patrimoine net (Actifs − Passifs)</span><span class="value ${patrimoineNet<0?'neg':'pos'}" style="font-size:20px">${fmt(patrimoineNet)}</span></div>
+    <p class="small-note" style="margin-top:8px">${patrimoineNet<0?"🔴 Patrimoine négatif — situation d'endettement net":"✅ Patrimoine net positif"}</p>
+  `;
+
+  actifsBody.querySelectorAll('[data-actif-del]').forEach(btn=>btn.addEventListener('click', async ()=>{
+    state.patrimoine.actifs = state.patrimoine.actifs.filter(a=>a.id!==btn.dataset.actifDel);
+    await persist(); renderPatrimoine();
+  }));
+  passifsBody.querySelectorAll('[data-passif-del]').forEach(btn=>btn.addEventListener('click', async ()=>{
+    state.patrimoine.passifs = state.patrimoine.passifs.filter(p=>p.id!==btn.dataset.passifDel);
+    await persist(); renderPatrimoine();
+  }));
+}
+document.getElementById('actifForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const a = {id:cuid(), nom:document.getElementById('actifNom').value, categorie:document.getElementById('actifCategorie').value, valeur:Number(document.getElementById('actifValeur').value||0)};
+  if(!a.nom) return;
+  state.patrimoine.actifs.push(a);
+  await persist(); e.target.reset(); renderPatrimoine();
+});
+document.getElementById('passifForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const p = {id:cuid(), nom:document.getElementById('passifNom').value, categorie:document.getElementById('passifCategorie').value, valeur:Number(document.getElementById('passifValeur').value||0)};
+  if(!p.nom) return;
+  state.patrimoine.passifs.push(p);
+  await persist(); e.target.reset(); renderPatrimoine();
+});
+
+/* ======================= PROJECTION FINANCIERE ======================= */
+function renderProjection(){
+  const p = state.projection;
+  document.getElementById('projRevenu').value = p.revenu;
+  document.getElementById('projCroissance').value = p.croissance;
+  document.getElementById('projInflation').value = p.inflation;
+  document.getElementById('projRendement').value = p.rendement;
+  document.getElementById('projHorizon').value = p.horizon;
+
+  const {mensualite:mensualiteUnique} = computeAmortization();
+  const mcRows = computeMultiCreditsRows().filter(r=>Number(r.capitalRestant||0)>0);
+  const mensualiteMulti = mcRows.reduce((s,r)=>s+r.mensualite,0);
+  const creditMensuel = mensualiteUnique + mensualiteMulti;
+
+  const s = state.settings;
+  const today = new Date();
+
+  // --- Passifs réels de départ (corrige la sous-estimation relevée par l'audit) ---
+  const {schedule} = computeAmortization();
+  const startCU = new Date(state.credit.date||'2025-01-01');
+  const dueCountCU = Math.min(Math.max(monthsBetween(startCU,today)+1,0), Number(state.credit.duree||0));
+  let soldeCU = schedule[dueCountCU-1] ? schedule[dueCountCU-1].soldeFin : Number(state.credit.montant||0);
+  const tauxMensuelCU = Number(state.credit.taux||0)/100/12;
+  // Copie de travail des soldes Multi-Crédits (amortis mois par mois, capital uniquement)
+  const mcSim = mcRows.map(r=>({ solde:Number(r.capitalRestant||0), tauxMensuel:Number(r.taux||0)/100/12, mensualite:r.mensualite }));
+  const totalPassifsManuel = state.patrimoine.passifs.reduce((sum,pp)=>sum+Number(pp.valeur||0),0);
+  const actifsInitiaux = state.patrimoine.actifs.reduce((sum,a)=>sum+Number(a.valeur||0),0);
+
+  // --- Bases fixes pour Besoins/Désirs : indexées uniquement sur l'inflation (corrige la double capitalisation relevée par l'audit) ---
+  const besoinsBase = p.revenu * s.allocBesoins;
+  const desirsBase = p.revenu * s.allocDesirs;
+
+  let cumulEpargne = 0;
+  let rows = [];
+  for(let m=1;m<=p.horizon;m++){
+    const revenu = p.revenu * Math.pow(1+Number(p.croissance||0), m);
+    const besoins = besoinsBase * Math.pow(1+Number(p.inflation||0), m);
+    const desirs = desirsBase * Math.pow(1+Number(p.inflation||0), m);
+    const epargneMois = revenu * s.allocEpargne;
+    const invest = revenu * s.allocInvest;
+    const totalCharges = besoins + epargneMois + desirs + invest + creditMensuel;
+    const solde = revenu - totalCharges;
+    cumulEpargne = cumulEpargne*(1+Number(p.rendement||0)) + epargneMois + Math.max(solde,0);
+
+    // Amortissement réel (capital uniquement) du crédit unique et de chaque Multi-Crédit actif
+    if(soldeCU>0){
+      const interetCU = soldeCU*tauxMensuelCU;
+      const principalCU = Math.min(mensualiteUnique-interetCU, soldeCU);
+      soldeCU = Math.max(soldeCU-principalCU, 0);
+    }
+    mcSim.forEach(c=>{
+      if(c.solde>0){
+        const interet = c.solde*c.tauxMensuel;
+        const principal = Math.min(c.mensualite-interet, c.solde);
+        c.solde = Math.max(c.solde-principal, 0);
+      }
+    });
+    const passifsCourant = soldeCU + mcSim.reduce((sum,c)=>sum+c.solde,0) + totalPassifsManuel;
+    const patrimoineProj = actifsInitiaux + cumulEpargne - passifsCourant;
+
+    const date = new Date(today); date.setMonth(date.getMonth()+m);
+    const statut = solde>=0 ? '✅ Excédent' : '🔴 Déficit';
+    rows.push({m, date, revenu, besoins, epargneMois, desirs, invest, creditMensuel, totalCharges, solde, cumulEpargne, patrimoineProj, statut});
+  }
+  document.getElementById('projBody').innerHTML = rows.map(r=>`
+    <tr><td>${r.m}</td><td>${r.date.toISOString().slice(0,10)}</td>
+    <td class="num">${fmt(r.revenu)}</td><td class="num">${fmt(r.besoins)}</td><td class="num">${fmt(r.epargneMois)}</td>
+    <td class="num">${fmt(r.desirs)}</td><td class="num">${fmt(r.invest)}</td><td class="num">${fmt(r.creditMensuel)}</td>
+    <td class="num">${fmt(r.totalCharges)}</td>
+    <td class="num" style="color:${r.solde<0?'var(--danger)':'var(--success)'}">${fmt(r.solde)}</td>
+    <td class="num">${fmt(r.cumulEpargne)}</td>
+    <td class="num">${fmt(r.patrimoineProj)}</td>
+    <td>${r.statut}</td></tr>`).join('');
+}
+document.getElementById('projSave').addEventListener('click', async ()=>{
+  state.projection = {
+    revenu:Number(document.getElementById('projRevenu').value||0),
+    croissance:Number(document.getElementById('projCroissance').value||0),
+    inflation:Number(document.getElementById('projInflation').value||0),
+    rendement:Number(document.getElementById('projRendement').value||0),
+    horizon:Number(document.getElementById('projHorizon').value||36)
+  };
+  await persist(); renderProjection();
+});
+
+/* ======================= INVESTISSEMENTS ======================= */
+function realiseForDesignation(name){
+  return state.transactions.filter(t=>t.categorie===name).reduce((s,t)=>s+Number(t.montant),0);
+}
+function renderInvestissements(){
+  const container = document.getElementById('investGroups');
+  container.innerHTML = INVEST_GROUPS.map(group=>{
+    let totalBudget=0, totalReal=0;
+    const rows = group.items.map(([name])=>{
+      const proj = state.investProjects[name] || {budget:0,priorite:'Bas',paye:false,urgent:false};
+      const real = realiseForDesignation(name);
+      totalBudget+=Number(proj.budget||0); totalReal+=real;
+      const ecart = Number(proj.budget||0)-real;
+      const statut = Number(proj.budget||0)>0 ? (real<=Number(proj.budget)?'✅ Respecté':'🔴 Dépassement') : (real>0?'Réalisé':'À planifier');
+      return `<tr>
+        <td>${name}</td>
+        <td><select data-invest-prio="${name}">
+          ${['Bas','Moyen','Haut'].map(p=>`<option value="${p}" ${proj.priorite===p?'selected':''}>${p}</option>`).join('')}
+        </select></td>
+        <td class="num"><input type="number" data-invest-budget="${name}" value="${proj.budget||''}" placeholder="0" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+        <td class="num">${fmt(real)}</td>
+        <td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td>
+        <td>${statut}</td>
+        <td style="text-align:center"><input type="checkbox" data-invest-paye="${name}" ${proj.paye?'checked':''}></td>
+        <td style="text-align:center"><input type="checkbox" data-invest-urgent="${name}" ${proj.urgent?'checked':''}></td>
+      </tr>`;
+    }).join('');
+    const groupStatut = totalBudget>0 ? (totalReal<=totalBudget?'✅ Budget respecté':'🔴 Dépassement') : '—';
+    return `<div class="section-title">${group.label} — Budget ${fmt(totalBudget)} · Réalisé ${fmt(totalReal)} · ${groupStatut}</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Désignation</th><th>Priorité</th><th class="num">Budget prévu</th><th class="num">Réalisé</th><th class="num">Écart</th><th>Statut</th><th>Payé ?</th><th>Urgent ?</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  }).join('');
+
+  container.querySelectorAll('[data-invest-budget]').forEach(inp=>inp.addEventListener('change', async ()=>{
+    state.investProjects[inp.dataset.investBudget].budget = Number(inp.value||0);
+    await persist(); renderInvestissements();
+  }));
+  container.querySelectorAll('[data-invest-prio]').forEach(sel=>sel.addEventListener('change', async ()=>{
+    state.investProjects[sel.dataset.investPrio].priorite = sel.value;
+    await persist();
+  }));
+  container.querySelectorAll('[data-invest-paye]').forEach(cb=>cb.addEventListener('change', async ()=>{
+    state.investProjects[cb.dataset.investPaye].paye = cb.checked;
+    await persist();
+  }));
+  container.querySelectorAll('[data-invest-urgent]').forEach(cb=>cb.addEventListener('change', async ()=>{
+    state.investProjects[cb.dataset.investUrgent].urgent = cb.checked;
+    await persist();
+  }));
+
+  // Projet construction maison
+  const c = state.construction;
+  document.getElementById('cstCout').value = c.coutTotal||0;
+  document.getElementById('cstDate').value = c.dateDebut||'';
+  document.getElementById('cstDepot').value = c.depotMensuel||0;
+
+  const cumul = realiseForDesignation('Apport projet construction');
+  const reste = Math.max(Number(c.coutTotal||0)-cumul,0);
+  const progression = c.coutTotal>0 ? cumul/c.coutTotal : 0;
+  const moisEcoules = Math.max(monthsBetween(new Date(c.dateDebut||'2025-01-01'), new Date())+1, 0);
+  const rythmeReel = moisEcoules>0 ? cumul/moisEcoules : 0;
+  const moisRestants = rythmeReel>0 ? Math.ceil(reste/rythmeReel) : null;
+  const cibleOk = rythmeReel >= Number(c.depotMensuel||0);
+  const statutProjet = cumul>=Number(c.coutTotal||0) ? '✅ Objectif atteint' : (cibleOk ? '✅ Rythme conforme à la cible' : '🔶 Rythme en-dessous de la cible — ajuster le dépôt mensuel');
+
+  document.getElementById('cstSuivi').innerHTML = `
+    <div class="section-title" style="margin-top:0">Suivi de progression</div>
+    <div class="kpi"><span class="label">Cumul épargné à ce jour</span><span class="value">${fmt(cumul)}</span></div>
+    <div class="kpi"><span class="label">Reste à épargner</span><span class="value">${fmt(reste)}</span></div>
+    <div class="kpi"><span class="label">Progression</span><span class="value">${pct(progression)}</span></div>
+    <div class="kpi"><span class="label">Mois écoulés depuis le début</span><span class="value">${moisEcoules}</span></div>
+    <div class="kpi"><span class="label">Rythme mensuel réel moyen</span><span class="value">${fmt(rythmeReel)}</span></div>
+    <div class="kpi"><span class="label">Mois restants au rythme actuel</span><span class="value">${moisRestants!==null?moisRestants:'—'}</span></div>
+    <div class="kpi"><span class="label">Statut du projet</span><span class="value" style="font-size:13px">${statutProjet}</span></div>
+    <div class="bar" style="margin-top:10px"><span style="width:${Math.min(progression*100,100)}%;background:var(--invest)"></span></div>
+  `;
+}
+document.getElementById('cstSave').addEventListener('click', async ()=>{
+  state.construction = {
+    coutTotal:Number(document.getElementById('cstCout').value||0),
+    dateDebut:document.getElementById('cstDate').value,
+    depotMensuel:Number(document.getElementById('cstDepot').value||0)
+  };
+  await persist(); renderInvestissements();
+});
+
+/* ======================= REFERENTIEL (onglet) ======================= */
+function renderReferentiel(){
+  const body = document.getElementById('refBody');
+  const all = getAllCategories();
+  const customNames = new Set((state.customCategories||[]).map(c=>c[0]));
+  body.innerHTML = all.map(([name,type])=>{
+    const isCustom = customNames.has(name);
+    return `<tr><td>${name}</td><td><span class="tag ${type}">${type}</span></td>
+      <td>${isCustom?`<button class="btn danger" data-ref-del="${name}">Suppr.</button>`:''}</td></tr>`;
+  }).join('') + REVENU_SOURCES.map(name=>`<tr><td>${name}</td><td><span class="tag REVENU">REVENU</span></td><td></td></tr>`).join('');
+  body.querySelectorAll('[data-ref-del]').forEach(btn=>btn.addEventListener('click', async ()=>{
+    state.customCategories = state.customCategories.filter(c=>c[0]!==btn.dataset.refDel);
+    delete state.budgets[btn.dataset.refDel];
+    await persist(); renderAll();
+  }));
+}
+document.getElementById('refAddBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('refNewName').value.trim();
+  const type = document.getElementById('refNewType').value;
+  if(!name) return;
+  if(getAllCategories().some(c=>c[0]===name) || REVENU_SOURCES.includes(name)){ alert('Cette catégorie existe déjà.'); return; }
+  if(type==='REVENU'){ REVENU_SOURCES.push(name); state.revenusPrevision[name]=0; }
+  else { state.customCategories.push([name,type]); state.budgets[name]=0; }
+  document.getElementById('refNewName').value='';
+  await persist(); renderAll();
+});
+
+/* ======================= SUIVI ANNUEL ======================= */
+function renderAnnuel(){
+  const {year} = currentFilter();
+  const types=['BESOINS','EPARGNE','DESIRS','INVEST'];
+  let rows = '';
+  // Revenus row
+  let revMonths = [], revTotal=0;
+  for(let m=1;m<=12;m++){
+    const key=year+'-'+String(m).padStart(2,'0');
+    let v=0; if(state.revenus[key]) REVENU_SOURCES.forEach(s=>v+=Number(state.revenus[key][s]||0));
+    revMonths.push(v); revTotal+=v;
+  }
+  rows += `<tr class="subgroup-row"><td>Revenus nets</td>${revMonths.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num">${fmt(revTotal)}</td></tr>`;
+
+  let grandTotalDep = 0, soldeMonths = revMonths.slice();
+  types.forEach(type=>{
+    const cats = getAllCategories().filter(c=>c[1]===type);
+    let groupMonths = new Array(12).fill(0);
+    cats.forEach(([name])=>{
+      let catMonths=[], catTotal=0;
+      for(let m=1;m<=12;m++){ const v=sumByCat(name,year,m); catMonths.push(v); catTotal+=v; groupMonths[m-1]+=v; }
+      if(catTotal>0){
+        rows += `<tr><td style="padding-left:22px">${name}</td>${catMonths.map(v=>`<td class="num">${v?fmt(v):'—'}</td>`).join('')}<td class="num">${fmt(catTotal)}</td></tr>`;
+      }
+    });
+    const groupTotal = groupMonths.reduce((a,b)=>a+b,0);
+    grandTotalDep += groupTotal;
+    for(let i=0;i<12;i++) soldeMonths[i]-=groupMonths[i];
+    rows = rows.replace('</tr>\n'.repeat(0),''); // no-op, keep order
+    rows += ''; 
+    // insert group header before its rows would be nicer, but keep simple: append group total row after category rows
+    rows += `<tr class="subgroup-row"><td>— ${GROUP_LABEL[type]}</td>${groupMonths.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num">${fmt(groupTotal)}</td></tr>`;
+  });
+  const soldeTotal = soldeMonths.reduce((a,b)=>a+b,0);
+  rows += `<tr style="font-weight:700;background:var(--bg)"><td>SOLDE MENSUEL</td>${soldeMonths.map(v=>`<td class="num" style="color:${v<0?'var(--danger)':'var(--success)'}">${fmt(v)}</td>`).join('')}<td class="num">${fmt(soldeTotal)}</td></tr>`;
+  document.getElementById('annuelBody').innerHTML = rows;
+}
+
+/* ======================= ALERTES ======================= */
+function renderAlertes(){
+  const {year,month} = currentFilter();
+  const revenuP = revenusRealisePeriod(year,month);
+  const besoins = sumByType('BESOINS',year,month);
+  const epargne = sumByType('EPARGNE',year,month);
+  const desirs = sumByType('DESIRS',year,month);
+  const invest = sumByType('INVEST',year,month);
+  const totalDep = besoins+epargne+desirs+invest;
+  const solde = revenuP-totalDep;
+  const nbTx = state.transactions.filter(t=>txMatchesPeriod(t,year,month)).length;
+  const ratioEpBesoins = besoins>0? epargne/besoins : 0;
+
+  // urgence : épargne d'urgence cumulée depuis toujours, comparée à une moyenne glissante récente des Besoins (voir ci-dessous)
+  const urgenceCumul = state.transactions.filter(t=>t.categorie==='Épargne urgence').reduce((s,t)=>s+Number(t.montant),0);
+  // Moyenne glissante des Besoins sur les 3 derniers mois calendaires PLEINEMENT ECOULES et réellement renseignés.
+  // (corrige un premier biais : les mois sans transaction ne sont plus comptés comme "0" dans la moyenne ;
+  //  corrige un second biais découvert avec des données réelles : le mois EN COURS, encore partiel,
+  //  était compté à égalité avec un mois complet, ce qui pouvait diviser la moyenne par deux en début de mois.
+  //  On part donc du mois dernier (k=1) plutôt que du mois en cours (k=0).)
+  const todayRef = new Date();
+  let besoinsRecent = 0, moisAvecDonnees = 0;
+  for(let k=1;k<=3;k++){
+    const d = new Date(todayRef.getFullYear(), todayRef.getMonth()-k, 1);
+    const v = sumByType('BESOINS', d.getFullYear(), d.getMonth()+1);
+    if(v>0){ besoinsRecent += v; moisAvecDonnees++; }
+  }
+  const avgMensuelBesoins = moisAvecDonnees>0 ? besoinsRecent/moisAvecDonnees : 0;
+  const couvertureMois = avgMensuelBesoins>0 ? urgenceCumul/avgMensuelBesoins : 0;
+
+  // Élargi à l'ensemble des catégories de type "formation" (corrige le périmètre trop restreint relevé par l'audit,
+  // qui ne portait que sur le seul poste "Formation" du Budget mensuel). Mis à jour après la consolidation du
+  // référentiel (04/08/2026) : "Formation" et "Perfectionnement" retirés car fusionnés respectivement dans
+  // "Formation professionnelle" et "Perfectionnement langue", déjà présents dans cette liste.
+  const FORMATION_CATEGORIES = ['Formation professionnelle','Perfectionnement langue',
+    'Cours en ligne / MOOC','Conférence / Séminaire','Coaching / Mentoring','Livres / Matériel pédago','Autre formation'];
+  const budgetFormationMensuel = FORMATION_CATEGORIES.reduce((s,c)=>s+Number(state.budgets[c]||0),0);
+  const budgetFormationPeriode = month==='all'? budgetFormationMensuel*12 : budgetFormationMensuel;
+  const realiseFormation = FORMATION_CATEGORIES.reduce((s,c)=>s+sumByCat(c,year,month),0);
+  const formationUtil = budgetFormationPeriode>0 ? realiseFormation/budgetFormationPeriode : 0;
+
+  const nbSources = REVENU_SOURCES.filter(s=>revenusRealiseParSource(s,year,month)>0).length;
+
+  const {mensualite} = computeAmortization();
+  const mensualiteMultiCredits = computeMultiCreditsRows().reduce((s,r)=>s+r.mensualite,0);
+  const mensualiteTotale = mensualite + mensualiteMultiCredits;
+  const revenuMensuelRef = REVENU_SOURCES.reduce((s,src)=>s+Number(state.revenusPrevision[src]||0),0);
+  const tauxEndettement = revenuMensuelRef>0? mensualiteTotale/revenuMensuelRef : 0;
+
+  const constructionCumul = state.transactions.filter(t=>t.categorie==='Apport projet construction').reduce((s,t)=>s+Number(t.montant),0);
+  const target = state.targets||{urgenceMois:3,construction:3000000};
+  const moisUrgenceCible = (state.settings&&state.settings.moisFondsUrgence) || 3;
+  const tauxEndettMax = (state.settings&&state.settings.tauxEndettMax) || 0.33;
+  const avancementConstruction = target.construction>0 ? constructionCumul/target.construction : 0;
+
+  // Budget PRÉVU (pas le réalisé) par bloc, comparé à la règle — alerte informative, non bloquante (point demandé : la saisie du budget reste libre).
+  const revenuPeriodeRefBudget = month==='all' ? revenuMensuelRef*12 : revenuMensuelRef;
+  function budgetPrevuByType(t){
+    return getAllCategories().filter(c=>c[1]===t).reduce((s,[n])=>{
+      const m = Number(state.budgets[n]||0);
+      return s + (month==='all'? m*12 : m);
+    }, 0);
+  }
+  const partPrevuBesoins = revenuPeriodeRefBudget>0 ? budgetPrevuByType('BESOINS')/revenuPeriodeRefBudget : 0;
+  const partPrevuEpargne = revenuPeriodeRefBudget>0 ? budgetPrevuByType('EPARGNE')/revenuPeriodeRefBudget : 0;
+  const partPrevuDesirs = revenuPeriodeRefBudget>0 ? budgetPrevuByType('DESIRS')/revenuPeriodeRefBudget : 0;
+  const partPrevuInvest = revenuPeriodeRefBudget>0 ? budgetPrevuByType('INVEST')/revenuPeriodeRefBudget : 0;
+
+  const rows = [
+    {label:`Taux d'épargne global`, val:revenuP>0?epargne/revenuP:0, seuil:getGroupTarget('EPARGNE'), fmtPct:true, higherBetter:true, prio:'Critique', reco:`Objectif : épargner au moins ${Math.round(getGroupTarget('EPARGNE')*100)}% de vos revenus. Réduire les Désirs si insuffisant.`},
+    {label:`Dépassement BESOINS (vs ${Math.round(getGroupTarget('BESOINS')*100)}%)`, val:revenuP>0?besoins/revenuP:0, seuil:getGroupTarget('BESOINS'), fmtPct:true, higherBetter:false, prio:'Haute', reco:`Les Besoins doivent rester ≤ ${Math.round(getGroupTarget('BESOINS')*100)}% du revenu. Renégocier loyer ou réduire charges.`},
+    {label:`Dépassement DÉSIRS (vs ${Math.round(getGroupTarget('DESIRS')*100)}%)`, val:revenuP>0?desirs/revenuP:0, seuil:getGroupTarget('DESIRS'), fmtPct:true, higherBetter:false, prio:'Haute', reco:`Les Désirs ne doivent pas dépasser ${Math.round(getGroupTarget('DESIRS')*100)}%. Identifier et limiter dépenses impulsives.`},
+    {label:`Taux d'investissement (vs ${Math.round(getGroupTarget('INVEST')*100)}%)`, val:revenuP>0?invest/revenuP:0, seuil:getGroupTarget('INVEST'), fmtPct:true, higherBetter:true, prio:'Haute', reco:`Investir ${Math.round(getGroupTarget('INVEST')*100)}% minimum (formation, placements). Bloquer ce montant dès réception du salaire.`},
+    {label:`Solde mensuel net (${devise()})`, val:solde, seuil:0, fmtPct:false, higherBetter:true, prio:'Critique', reco:"Le solde doit être positif. Un solde négatif = endettement progressif."},
+    {label:'Nombre de transactions', val:nbTx, seuil:5, fmtPct:false, higherBetter:true, prio:'Moyenne', reco:"Moins de 5 transactions = données incomplètes. Saisir toutes les dépenses."},
+    {label:'Ratio Épargne / Besoins', val:ratioEpBesoins, seuil:0.4, fmtPct:true, higherBetter:true, prio:'Haute', reco:"Idéalement, l'épargne doit représenter 40% du budget Besoins (sécurité financière)."},
+    {label:'Couverture fonds urgence (mois)', val:couvertureMois, seuil:moisUrgenceCible, fmtPct:false, higherBetter:true, prio:'Haute', reco:`Constituer l'équivalent de ${moisUrgenceCible} mois de dépenses en épargne d'urgence.`},
+    {label:'Budget Formation & Perfectionnement utilisé (%)', val:formationUtil, seuil:0.8, fmtPct:true, higherBetter:true, prio:'Moyenne', reco:"Utiliser au moins 80% du budget formation chaque mois (toutes catégories de formation confondues). C'est un investissement à ne pas négliger."},
+    {label:'Diversification revenus (nb sources)', val:nbSources, seuil:2, fmtPct:false, higherBetter:true, prio:'Haute', reco:"Avoir au moins 2 sources de revenus réduit la vulnérabilité en cas de perte d'emploi."},
+    {label:'Taux d\'endettement (mensualités, tous crédits)', val:tauxEndettement, seuil:tauxEndettMax, fmtPct:true, higherBetter:false, prio:'Critique', reco:`Norme bancaire : les mensualités ne devraient pas dépasser ${Math.round(tauxEndettMax*100)}% du revenu.`},
+    {label:'Avancement épargne construction', val:avancementConstruction, seuil:1, fmtPct:true, higherBetter:true, prio:'Moyenne', reco:"Maintenir le dépôt mensuel cible pour atteindre l'objectif dans les délais prévus."},
+    {label:`Budget prévu Besoins vs règle (${Math.round(getGroupTarget('BESOINS')*100)}%)`, val:partPrevuBesoins, seuil:getGroupTarget('BESOINS'), fmtPct:true, higherBetter:false, prio:'Moyenne', reco:"Le budget que vous avez planifié (pas seulement le réalisé) dépasse la règle établie. Purement informatif : vous pouvez continuer à ajuster vos postes librement.", info:true},
+    {label:`Budget prévu Épargne vs règle (${Math.round(getGroupTarget('EPARGNE')*100)}%)`, val:partPrevuEpargne, seuil:getGroupTarget('EPARGNE'), fmtPct:true, higherBetter:false, prio:'Moyenne', reco:"Le budget prévu pour l'Épargne dépasse la part fixée par la règle. Purement informatif, aucune saisie n'est bloquée.", info:true},
+    {label:`Budget prévu Désirs vs règle (${Math.round(getGroupTarget('DESIRS')*100)}%)`, val:partPrevuDesirs, seuil:getGroupTarget('DESIRS'), fmtPct:true, higherBetter:false, prio:'Moyenne', reco:"Le budget prévu pour les Désirs dépasse la part fixée par la règle. Purement informatif, aucune saisie n'est bloquée.", info:true},
+    {label:`Budget prévu Investissements vs règle (${Math.round(getGroupTarget('INVEST')*100)}%)`, val:partPrevuInvest, seuil:getGroupTarget('INVEST'), fmtPct:true, higherBetter:false, prio:'Moyenne', reco:"Le budget prévu pour les Investissements dépasse la part fixée par la règle. Purement informatif, aucune saisie n'est bloquée.", info:true}
+  ];
+  document.getElementById('alertesBody').innerHTML = rows.map((r,i)=>{
+    const ok = r.higherBetter ? r.val>=r.seuil : r.val<=r.seuil;
+    const badge = ok? '<span class="badge ok">✅ OK</span>' : (r.info? '<span class="badge warn">⚠️ Info</span>' : '<span class="badge bad">🔴 Attention</span>');
+    const valStr = r.fmtPct? pct(r.val) : (Number.isInteger(r.seuil)&&!r.fmtPct? fmt(r.val) : fmt(r.val));
+    const seuilStr = r.fmtPct? pct(r.seuil) : fmt(r.seuil);
+    const prioClass = r.prio==='Critique'?'priority-critique':(r.prio==='Haute'?'priority-haute':'priority-moyenne');
+    return `<tr><td>${i+1}</td><td>${r.label}</td><td class="num">${valStr}</td><td class="num">${seuilStr}</td><td>${badge}</td><td class="${prioClass}">${r.prio}</td><td style="font-size:12.5px">${r.reco}</td></tr>`;
+  }).join('');
+
+  // Badge de notification sur l'onglet 🔔 Alertes, reflétant le nombre d'indicateurs qui méritent attention.
+  const nbAttention = rows.filter(r=> !(r.higherBetter ? r.val>=r.seuil : r.val<=r.seuil)).length;
+  const alertesBtn = document.querySelector('#tabs button[data-tab="alertes"]');
+  if(alertesBtn){
+    alertesBtn.querySelectorAll('.nav-badge').forEach(el=>el.remove());
+    if(nbAttention>0){
+      const span = document.createElement('span');
+      span.className='nav-badge';
+      span.textContent = nbAttention;
+      alertesBtn.appendChild(span);
+    }
+  }
+}
+document.getElementById('targetSave').addEventListener('click', async ()=>{
+  state.targets.construction = Number(document.getElementById('targetConstruction').value||3000000);
+  await persist(); renderAlertes();
+});
+
+/* ======================= RENDER ALL ======================= */
+function renderAll(){
+  updateCurrencyLabels();
+  updateHeaderRule();
+  updateHeaderUserName();
+  renderNav();
+  renderParametres();
+  renderDashboard();
+  renderTransactions();
+  renderBudget();
+  renderRevenus();
+  renderCredit();
+  renderMultiCredits();
+  renderInvestissements();
+  renderMaintenance();
+  renderObjectifs();
+  renderPatrimoine();
+  renderProjection();
+  renderAnnuel();
+  renderAlertes();
+  renderReferentiel();
+}
+
+/* ======================= INIT ======================= */
+(async function init(){
+  await loadState();
+  initFilters();
+  populateTxSelects();
+  document.getElementById('targetConstruction').value = state.targets.construction;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('txDate').value = today;
+  renderAll();
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
