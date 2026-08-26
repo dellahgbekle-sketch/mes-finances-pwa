@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <style>
 :root{
@@ -1098,6 +1099,9 @@ function fmt(n){
   return (neg?'-':'')+s;
 }
 function pct(n){ return (Math.round((n||0)*1000)/10)+'%'; }
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function devise(){ return (state.settings&&state.settings.devise)||'FCFA'; }
 function updateCurrencyLabels(){
   document.querySelectorAll('.cur-label').forEach(el=>{ el.textContent = devise(); });
@@ -1426,7 +1430,7 @@ function renderDashboard(){
     const real = revenusRealiseParSource(src,year,month);
     totalPrevu+=prevu; totalReal+=real;
     const ecart = real-prevu;
-    return `<tr><td>${src}</td><td class="num">${fmt(prevu)}</td><td class="num">${fmt(real)}</td><td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td></tr>`;
+    return `<tr><td>${escapeHtml(src)}</td><td class="num">${fmt(prevu)}</td><td class="num">${fmt(real)}</td><td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td></tr>`;
   }).join('') + `<tr style="font-weight:700;background:var(--bg)"><td>TOTAL REVENUS</td><td class="num">${fmt(totalPrevu)}</td><td class="num">${fmt(totalReal)}</td><td class="num">${fmt(totalReal-totalPrevu)}</td></tr>`;
 
   // charts
@@ -1587,12 +1591,12 @@ function renderTransactions(){
   body.innerHTML = list.map(t=>`
     <tr>
       <td>${t.date}</td>
-      <td>${t.description}</td>
+      <td>${escapeHtml(t.description)}</td>
       <td>${t.categorie}</td>
       <td><span class="tag ${t.type}">${t.type}</span></td>
       <td class="num">${fmt(t.montant)}</td>
-      <td>${t.mode||''}</td>
-      <td>${t.reference||''}</td>
+      <td>${escapeHtml(t.mode)||''}</td>
+      <td>${escapeHtml(t.reference)||''}</td>
       <td style="white-space:nowrap"><button class="btn secondary small" data-edit="${t.id}">Modifier</button> <button class="btn danger" data-id="${t.id}">Suppr.</button></td>
     </tr>`).join('');
   body.querySelectorAll('button.danger').forEach(b=>b.addEventListener('click', async ()=>{
@@ -1622,7 +1626,7 @@ function renderBudget(){
       const consomme = prevu>0? real/prevu : (real>0?1:0);
       const status = prevu===0 ? '—' : (consomme<=1 ? '✅ Respecté' : '🔴 Dépassé');
       return `<tr>
-        <td>${name}</td>
+        <td>${escapeHtml(name)}</td>
         <td class="num"><input type="number" data-cat="${name}" value="${prevuMensuel}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
         <td class="num">${fmt(real)}</td>
         <td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td>
@@ -1665,7 +1669,7 @@ function renderRevenus(){
       cells.push(`<td class="num"><input type="number" data-src="${src}" data-month="${m}" value="${val||''}" placeholder="0" style="width:78px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-family:var(--mono);font-size:12px"></td>`);
     }
     const prevision = Number(state.revenusPrevision[src]||0);
-    return `<tr><td>${src}</td>${cells.join('')}<td class="num" style="font-weight:700">${fmt(rowTotal)}</td>
+    return `<tr><td>${escapeHtml(src)}</td>${cells.join('')}<td class="num" style="font-weight:700">${fmt(rowTotal)}</td>
       <td class="num"><input type="number" data-prevision="${src}" value="${prevision||''}" style="width:90px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-family:var(--mono);font-size:12px"></td></tr>`;
   }).join('');
   const grandTotal = monthTotals.reduce((a,b)=>a+b,0);
@@ -1991,7 +1995,7 @@ function renderMaintenance(){
   const rows = computeMaintenanceRows();
   document.getElementById('maintBody').innerHTML = rows.length ? rows.map(m=>`
     <tr>
-      <td>${m.nom}</td><td>${m.categorie||''}</td>
+      <td>${escapeHtml(m.nom)}</td><td>${escapeHtml(m.categorie)||''}</td>
       <td>${m.mode==='km'?'🚗 Km':'📅 Temps'}</td>
       <td class="num">${m.mode==='km'?fmt(m.intervalleKm)+' km':m.intervalle+' mois'}</td>
       <td>${m.mode==='km'?fmt(m.kmDerniere)+' km':(m.derniere||'')}</td>
@@ -2000,7 +2004,7 @@ function renderMaintenance(){
       <td>${m.statut}</td>
       <td class="num">${fmt(m.coutEstime)}</td>
       <td class="num"><input type="number" data-maint-cout="${m.id}" value="${m.coutReel||''}" placeholder="0" style="width:80px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-family:var(--mono)"></td>
-      <td>${m.responsable||''}</td><td style="font-size:12px">${m.notes||''}</td>
+      <td>${escapeHtml(m.responsable)||''}</td><td style="font-size:12px">${escapeHtml(m.notes)||''}</td>
       <td style="white-space:nowrap">${m.mode==='km'?`<button class="btn secondary small" data-maint-km="${m.id}">MAJ km</button> `:''}<button class="btn danger" data-maint-del="${m.id}">Suppr.</button></td>
     </tr>`).join('') : `<tr><td colspan="13" class="empty">Aucun équipement suivi pour l'instant.</td></tr>`;
 
@@ -2100,7 +2104,7 @@ function renderObjectifs(){
   const rows = computeObjectifsRows();
   document.getElementById('objBody').innerHTML = rows.length ? rows.map((o,i)=>`
     <tr>
-      <td>${i+1}</td><td>${o.nom}</td><td>${o.categorie||''}${o.categorieLiee?`<br><span style="font-size:10.5px;color:var(--ink-soft)">🔗 ${o.categorieLiee}</span>`:''}</td>
+      <td>${i+1}</td><td>${escapeHtml(o.nom)}</td><td>${escapeHtml(o.categorie)||''}${o.categorieLiee?`<br><span style="font-size:10.5px;color:var(--ink-soft)">🔗 ${escapeHtml(o.categorieLiee)}</span>`:''}</td>
       <td class="num">${fmt(o.cible)}</td>
       <td class="num">${o.categorieLiee
         ? `${fmt(o.epargne)} <span title="Calculé automatiquement depuis les transactions" style="font-size:10px;color:var(--ink-soft)">🔗auto</span>`
@@ -2164,7 +2168,7 @@ function renderPatrimoine(){
   let totalActifs = 0;
   actifsBody.innerHTML = state.patrimoine.actifs.map(a=>{
     totalActifs += Number(a.valeur||0);
-    return `<tr><td>${a.nom}</td><td>${a.categorie||''}</td><td class="num">${fmt(a.valeur)}</td><td><button class="btn danger" data-actif-del="${a.id}">Suppr.</button></td></tr>`;
+    return `<tr><td>${escapeHtml(a.nom)}</td><td>${escapeHtml(a.categorie)||''}</td><td class="num">${fmt(a.valeur)}</td><td><button class="btn danger" data-actif-del="${a.id}">Suppr.</button></td></tr>`;
   }).join('');
   document.getElementById('actifsFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="2">TOTAL ACTIFS</td><td class="num">${fmt(totalActifs)}</td><td></td></tr>`;
 
@@ -2172,7 +2176,7 @@ function renderPatrimoine(){
   let totalPassifsManuel = state.patrimoine.passifs.reduce((s,p)=>s+Number(p.valeur||0),0);
   let rowsHtml = `<tr><td>Crédit bancaire principal</td><td>Crédit</td><td class="num">${fmt(capitalRestantCredit)}</td><td style="color:var(--ink-soft);font-size:11px">auto</td></tr>`;
   if(capitalRestantMulti>0) rowsHtml += `<tr><td>Multi-Crédits (cumul)</td><td>Crédit</td><td class="num">${fmt(capitalRestantMulti)}</td><td style="color:var(--ink-soft);font-size:11px">auto</td></tr>`;
-  rowsHtml += state.patrimoine.passifs.map(p=>`<tr><td>${p.nom}</td><td>${p.categorie||''}</td><td class="num">${fmt(p.valeur)}</td><td><button class="btn danger" data-passif-del="${p.id}">Suppr.</button></td></tr>`).join('');
+  rowsHtml += state.patrimoine.passifs.map(p=>`<tr><td>${escapeHtml(p.nom)}</td><td>${escapeHtml(p.categorie)||''}</td><td class="num">${fmt(p.valeur)}</td><td><button class="btn danger" data-passif-del="${p.id}">Suppr.</button></td></tr>`).join('');
   passifsBody.innerHTML = rowsHtml;
   const totalPassifs = capitalRestantCredit + capitalRestantMulti + totalPassifsManuel;
   document.getElementById('passifsFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="2">TOTAL PASSIFS</td><td class="num">${fmt(totalPassifs)}</td><td></td></tr>`;
@@ -2329,7 +2333,7 @@ function renderInvestissements(){
       const ecart = Number(proj.budget||0)-real;
       const statut = Number(proj.budget||0)>0 ? (real<=Number(proj.budget)?'✅ Respecté':'🔴 Dépassement') : (real>0?'Réalisé':'À planifier');
       return `<tr>
-        <td>${name}</td>
+        <td>${escapeHtml(name)}</td>
         <td><select data-invest-prio="${name}">
           ${['Bas','Moyen','Haut'].map(p=>`<option value="${p}" ${proj.priorite===p?'selected':''}>${p}</option>`).join('')}
         </select></td>
@@ -2409,9 +2413,9 @@ function renderReferentiel(){
   const customNames = new Set((state.customCategories||[]).map(c=>c[0]));
   body.innerHTML = all.map(([name,type])=>{
     const isCustom = customNames.has(name);
-    return `<tr><td>${name}</td><td><span class="tag ${type}">${type}</span></td>
+    return `<tr><td>${escapeHtml(name)}</td><td><span class="tag ${type}">${type}</span></td>
       <td>${isCustom?`<button class="btn danger" data-ref-del="${name}">Suppr.</button>`:''}</td></tr>`;
-  }).join('') + REVENU_SOURCES.map(name=>`<tr><td>${name}</td><td><span class="tag REVENU">REVENU</span></td><td></td></tr>`).join('');
+  }).join('') + REVENU_SOURCES.map(name=>`<tr><td>${escapeHtml(name)}</td><td><span class="tag REVENU">REVENU</span></td><td></td></tr>`).join('');
   body.querySelectorAll('[data-ref-del]').forEach(btn=>btn.addEventListener('click', async ()=>{
     state.customCategories = state.customCategories.filter(c=>c[0]!==btn.dataset.refDel);
     delete state.budgets[btn.dataset.refDel];
@@ -2451,7 +2455,7 @@ function renderAnnuel(){
       let catMonths=[], catTotal=0;
       for(let m=1;m<=12;m++){ const v=sumByCat(name,year,m); catMonths.push(v); catTotal+=v; groupMonths[m-1]+=v; }
       if(catTotal>0){
-        rows += `<tr><td style="padding-left:22px">${name}</td>${catMonths.map(v=>`<td class="num">${v?fmt(v):'—'}</td>`).join('')}<td class="num">${fmt(catTotal)}</td></tr>`;
+        rows += `<tr><td style="padding-left:22px">${escapeHtml(name)}</td>${catMonths.map(v=>`<td class="num">${v?fmt(v):'—'}</td>`).join('')}<td class="num">${fmt(catTotal)}</td></tr>`;
       }
     });
     const groupTotal = groupMonths.reduce((a,b)=>a+b,0);
