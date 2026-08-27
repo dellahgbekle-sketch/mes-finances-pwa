@@ -392,7 +392,7 @@ input[type=number]{font-family:var(--mono);}
   <section class="panel" id="panel-recurrences">
     <p class="small-note">Définis ici tes charges fixes (loyer, abonnements, assurances, remboursements...). À chaque ouverture de l'app, les transactions dues depuis la dernière visite sont générées automatiquement dans l'onglet Transactions — tu n'as plus besoin de les ressaisir chaque mois.</p>
     <div class="card">
-      <div class="section-title" style="margin-top:0">+ Nouvelle dépense récurrente</div>
+      <div class="section-title" style="margin-top:0" id="recFormTitle">+ Nouvelle dépense récurrente</div>
       <form class="tx-form" id="recForm">
         <div><label>Libellé</label><input type="text" id="recNom" required placeholder="Ex : Loyer"></div>
         <div><label>Catégorie</label><select id="recCategorie" required></select></div>
@@ -404,7 +404,7 @@ input[type=number]{font-family:var(--mono);}
             <option value="annuel">Annuelle</option>
           </select>
         </div>
-        <div><label>Première échéance</label><input type="date" id="recDateDebut" required></div>
+        <div><label id="recDateDebutLabel">Première échéance</label><input type="date" id="recDateDebut" required></div>
         <div><label>Date de fin (optionnel)</label><input type="date" id="recDateFin"></div>
         <div><label>Mode de paiement</label>
           <select id="recMode">
@@ -412,7 +412,10 @@ input[type=number]{font-family:var(--mono);}
           </select>
         </div>
         <div class="full"><label>Notes</label><input type="text" id="recNotes"></div>
-        <div class="full"><button type="submit" class="btn">+ Ajouter la dépense récurrente</button></div>
+        <div class="full">
+          <button type="submit" class="btn" id="recSubmitBtn">+ Ajouter la dépense récurrente</button>
+          <button type="button" class="btn secondary" id="recCancelEdit" style="display:none">Annuler</button>
+        </div>
       </form>
     </div>
 
@@ -1808,6 +1811,7 @@ function renderRecurrences(){
       <td>${r.prochaineEcheance||''}</td>
       <td>${statut}</td>
       <td style="white-space:nowrap">
+        <button class="btn secondary small" data-rec-edit="${r.id}">Modifier</button>
         <button class="btn secondary small" data-rec-toggle="${r.id}">${r.actif?'Pause':'Reprendre'}</button>
         <button class="btn danger" data-rec-del="${r.id}">Suppr.</button>
       </td>
@@ -1828,31 +1832,73 @@ function renderRecurrences(){
     <div class="card"><div class="kpi"><span class="label">En pause</span><span class="value">${(state.recurrences||[]).length-actives.length}</span></div></div>
   `;
 
+  document.getElementById('recBody').querySelectorAll('[data-rec-edit]').forEach(b=>b.addEventListener('click', ()=>{
+    startEditRecurrence(b.dataset.recEdit);
+  }));
   document.getElementById('recBody').querySelectorAll('[data-rec-toggle]').forEach(b=>b.addEventListener('click', async ()=>{
     const r = state.recurrences.find(x=>x.id===b.dataset.recToggle);
     if(r){ r.actif=!r.actif; await persist(); renderRecurrences(); }
   }));
   document.getElementById('recBody').querySelectorAll('[data-rec-del]').forEach(b=>b.addEventListener('click', async ()=>{
     if(!confirm('Supprimer cette dépense récurrente ? Les transactions déjà générées ne seront pas supprimées.')) return;
+    if(editingRecId===b.dataset.recDel) cancelEditRecurrence();
     state.recurrences = state.recurrences.filter(x=>x.id!==b.dataset.recDel);
     await persist(); renderRecurrences();
   }));
 }
+let editingRecId = null;
+function startEditRecurrence(id){
+  const r = state.recurrences.find(x=>x.id===id);
+  if(!r) return;
+  editingRecId = id;
+  document.getElementById('recNom').value = r.nom;
+  document.getElementById('recCategorie').value = r.categorie;
+  document.getElementById('recMontant').value = r.montant;
+  document.getElementById('recFrequence').value = r.frequence;
+  document.getElementById('recDateDebut').value = r.prochaineEcheance||'';
+  document.getElementById('recDateFin').value = r.dateFin||'';
+  document.getElementById('recMode').value = r.mode||'Virement';
+  document.getElementById('recNotes').value = r.notes||'';
+  document.getElementById('recFormTitle').textContent = '✏️ Modifier : ' + r.nom;
+  document.getElementById('recDateDebutLabel').textContent = 'Prochaine échéance';
+  document.getElementById('recSubmitBtn').textContent = '💾 Enregistrer les modifications';
+  document.getElementById('recCancelEdit').style.display = 'inline-block';
+  document.getElementById('recForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function cancelEditRecurrence(){
+  editingRecId = null;
+  document.getElementById('recForm').reset();
+  document.getElementById('recFormTitle').textContent = '+ Nouvelle dépense récurrente';
+  document.getElementById('recDateDebutLabel').textContent = 'Première échéance';
+  document.getElementById('recSubmitBtn').textContent = '+ Ajouter la dépense récurrente';
+  document.getElementById('recCancelEdit').style.display = 'none';
+}
+document.getElementById('recCancelEdit').addEventListener('click', cancelEditRecurrence);
 document.getElementById('recForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  const r = {
-    id:cuid(),
-    nom:document.getElementById('recNom').value,
-    categorie:document.getElementById('recCategorie').value,
-    montant:Number(document.getElementById('recMontant').value||0),
-    frequence:document.getElementById('recFrequence').value,
-    prochaineEcheance:document.getElementById('recDateDebut').value,
-    dateFin:document.getElementById('recDateFin').value||'',
-    mode:document.getElementById('recMode').value,
-    notes:document.getElementById('recNotes').value,
-    actif:true
-  };
-  if(!r.nom || !r.montant || !r.prochaineEcheance) return;
+  const nom = document.getElementById('recNom').value;
+  const categorie = document.getElementById('recCategorie').value;
+  const montant = Number(document.getElementById('recMontant').value||0);
+  const frequence = document.getElementById('recFrequence').value;
+  const dateChamp = document.getElementById('recDateDebut').value;
+  const dateFin = document.getElementById('recDateFin').value||'';
+  const mode = document.getElementById('recMode').value;
+  const notes = document.getElementById('recNotes').value;
+  if(!nom || !montant || !dateChamp) return;
+
+  if(editingRecId){
+    const r = state.recurrences.find(x=>x.id===editingRecId);
+    if(!r){ cancelEditRecurrence(); return; }
+    r.nom = nom; r.categorie = categorie; r.montant = montant; r.frequence = frequence;
+    r.prochaineEcheance = dateChamp; r.dateFin = dateFin; r.mode = mode; r.notes = notes;
+    cancelEditRecurrence();
+    await persist();
+    refreshYearOptions();
+    renderAll();
+    return;
+  }
+
+  const r = { id:cuid(), nom, categorie, montant, frequence, prochaineEcheance:dateChamp, dateFin, mode, notes, actif:true };
   state.recurrences.push(r);
   // génère immédiatement si la première échéance est déjà passée ou aujourd'hui
   genererTransactionsRecurrentes();
