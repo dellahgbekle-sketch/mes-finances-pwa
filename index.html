@@ -388,6 +388,45 @@ input[type=number]{font-family:var(--mono);}
     </div>
   </section>
 
+  <!-- DEPENSES RECURRENTES -->
+  <section class="panel" id="panel-recurrences">
+    <p class="small-note">Définis ici tes charges fixes (loyer, abonnements, assurances, remboursements...). À chaque ouverture de l'app, les transactions dues depuis la dernière visite sont générées automatiquement dans l'onglet Transactions — tu n'as plus besoin de les ressaisir chaque mois.</p>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">+ Nouvelle dépense récurrente</div>
+      <form class="tx-form" id="recForm">
+        <div><label>Libellé</label><input type="text" id="recNom" required placeholder="Ex : Loyer"></div>
+        <div><label>Catégorie</label><select id="recCategorie" required></select></div>
+        <div><label>Montant (<span class="cur-label">FCFA</span>)</label><input type="number" id="recMontant" min="0" step="1" required></div>
+        <div><label>Fréquence</label>
+          <select id="recFrequence">
+            <option value="mensuel">Mensuelle</option>
+            <option value="hebdomadaire">Hebdomadaire</option>
+            <option value="annuel">Annuelle</option>
+          </select>
+        </div>
+        <div><label>Première échéance</label><input type="date" id="recDateDebut" required></div>
+        <div><label>Date de fin (optionnel)</label><input type="date" id="recDateFin"></div>
+        <div><label>Mode de paiement</label>
+          <select id="recMode">
+            <option>Virement</option><option>Mobile Money</option><option>Espèces</option><option>CB</option><option>Chèque</option><option>Autre</option>
+          </select>
+        </div>
+        <div class="full"><label>Notes</label><input type="text" id="recNotes"></div>
+        <div class="full"><button type="submit" class="btn">+ Ajouter la dépense récurrente</button></div>
+      </form>
+    </div>
+
+    <div class="section-title">Charges fixes actives</div>
+    <div class="grid4" id="recRecap"></div>
+
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>Libellé</th><th>Catégorie</th><th class="num">Montant</th><th>Fréquence</th><th>Prochaine échéance</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="recBody"></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- BUDGET MENSUEL -->
   <section class="panel" id="panel-budget">
     <p class="small-note">Le budget prévu est modifiable par poste. Le réalisé est calculé automatiquement depuis vos transactions pour la période sélectionnée en haut de page.</p>
@@ -909,6 +948,7 @@ let state = {
   maintenance: [],  // {id,nom,categorie,intervalle,derniere,coutEstime,coutReel,responsable,notes}
   multiCredits: [], // 5 slots {id,intitule,montantInitial,capitalRestant,taux,moisRestants}
   objectifs: [],    // {id,nom,categorie,montantCible,epargneManuel,dateCible,priorite,note}
+  recurrences: [],  // {id,nom,categorie,montant,frequence,prochaineEcheance,dateFin,mode,notes,actif}
   patrimoine: {actifs:[], passifs:[]},
   projection: {revenu:0, croissance:0.005, inflation:0.003, rendement:0.006, horizon:36}
 };
@@ -962,6 +1002,10 @@ function defaultData(){
       {id:"tx_1785679910704_bk7slu", nom:"Vacances famille", categorie:"Loisirs", montantCible:300000, epargneManuel:0, dateCible:"2025-09-01", priorite:"🟡 Moyenne", note:""},
       {id:"tx_1785679910704_iu0fb5", nom:"Formation MBA", categorie:"Formation", montantCible:500000, epargneManuel:25000, dateCible:"2026-01-01", priorite:"🔶 Haute", note:""},
       {id:"tx_1785679910704_94o0aq", nom:"Apport construction", categorie:"Construction", montantCible:2000000, epargneManuel:0, dateCible:"2027-01-01", priorite:"🔴 Critique", note:""}
+    ],
+    recurrences:[
+      {id:"tx_1785679910704_rec001", nom:"Loyer", categorie:"Logement", montant:250000, frequence:"mensuel", prochaineEcheance:"2025-02-02", dateFin:"", mode:"Virement", notes:"", actif:true},
+      {id:"tx_1785679910704_rec002", nom:"Abonnement Canal+", categorie:"Abonnements", montant:15000, frequence:"mensuel", prochaineEcheance:"2025-02-05", dateFin:"", mode:"Mobile Money", notes:"", actif:true}
     ],
     patrimoine:{
       actifs:[
@@ -1059,6 +1103,7 @@ function normalizeState(){
   if(!state.maintenance) state.maintenance=[];
   if(!state.multiCredits || state.multiCredits.length<5) state.multiCredits = Array.from({length:5},(_,i)=>(state.multiCredits&&state.multiCredits[i])||{id:cuid(), intitule:`Crédit ${i+1}`, montantInitial:0, capitalRestant:0, taux:7, moisRestants:12});
   if(!state.objectifs) state.objectifs=[];
+  if(!state.recurrences) state.recurrences=[];
   if(!state.patrimoine) state.patrimoine={actifs:[], passifs:[]};
   if(!state.projection) state.projection={revenu:480000, croissance:0.005, inflation:0.003, rendement:0.006, horizon:36};
   if(!state.tabOrder) state.tabOrder=null; // sera régénéré par ensureTabOrder()
@@ -1259,6 +1304,7 @@ const TAB_DEFS = [
   {id:'dashboard', label:'📊 Tableau de bord'},
   {id:'parametres', label:'⚙️ Paramètres'},
   {id:'transactions', label:'📝 Transactions'},
+  {id:'recurrences', label:'🔁 Dépenses récurrentes'},
   {id:'budget', label:'💼 Budget mensuel'},
   {id:'revenus', label:'💰 Revenus'},
   {id:'investissements', label:'📈 Investissements'},
@@ -1679,7 +1725,7 @@ function renderTransactions(){
   body.innerHTML = list.map(t=>`
     <tr>
       <td>${t.date}</td>
-      <td>${escapeHtml(t.description)}</td>
+      <td>${t.recurrenceId?'🔁 ':''}${escapeHtml(t.description)}</td>
       <td>${t.categorie}</td>
       <td><span class="tag ${t.type}">${t.type}</span></td>
       <td class="num">${fmt(t.montant)}</td>
@@ -1694,6 +1740,110 @@ function renderTransactions(){
   }));
   body.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>startTxEdit(b.dataset.edit)));
 }
+
+/* ======================= DEPENSES RECURRENTES ======================= */
+const FREQ_LABEL = {mensuel:'Mensuelle', hebdomadaire:'Hebdomadaire', annuel:'Annuelle'};
+function avancerDate(d, frequence){
+  const n = new Date(d);
+  if(frequence==='hebdomadaire') n.setDate(n.getDate()+7);
+  else if(frequence==='annuel') n.setFullYear(n.getFullYear()+1);
+  else n.setMonth(n.getMonth()+1);
+  return n;
+}
+// Génère automatiquement les transactions dues depuis la dernière ouverture de l'app. Retourne le nombre de transactions créées.
+function genererTransactionsRecurrentes(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  let nbGenerees = 0;
+  (state.recurrences||[]).forEach(r=>{
+    if(!r.actif || !r.prochaineEcheance) return;
+    let next = new Date(r.prochaineEcheance);
+    let garde = 0; // sécurité anti-boucle infinie
+    while(next<=today && garde<1000){
+      if(r.dateFin && next>new Date(r.dateFin)) break;
+      state.transactions.unshift({
+        id:cuid(), date:next.toISOString().slice(0,10), description:r.nom,
+        categorie:r.categorie, type:catType(r.categorie), montant:Number(r.montant||0),
+        mode:r.mode||'Virement', reference:'', notes:(r.notes?r.notes+' — ':'')+'🔁 généré automatiquement',
+        recurrenceId:r.id
+      });
+      nbGenerees++;
+      next = avancerDate(next, r.frequence);
+      garde++;
+    }
+    r.prochaineEcheance = next.toISOString().slice(0,10);
+  });
+  return nbGenerees;
+}
+function renderRecurrences(){
+  const cats = getAllCategories().filter(c=>c[1]!=='INVEST' || true); // toutes catégories, y compris personnalisées
+  const catSel = document.getElementById('recCategorie');
+  if(catSel.options.length===0){
+    catSel.innerHTML = getAllCategories().map(([n])=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  }
+  const list = (state.recurrences||[]).slice().sort((a,b)=> (a.prochaineEcheance||'').localeCompare(b.prochaineEcheance||''));
+  document.getElementById('recBody').innerHTML = list.length ? list.map(r=>{
+    const statut = r.actif ? '🔵 Active' : '⏸️ En pause';
+    return `<tr>
+      <td>${escapeHtml(r.nom)}</td>
+      <td>${escapeHtml(r.categorie)}</td>
+      <td class="num">${fmt(r.montant)}</td>
+      <td>${FREQ_LABEL[r.frequence]||r.frequence}</td>
+      <td>${r.prochaineEcheance||''}</td>
+      <td>${statut}</td>
+      <td style="white-space:nowrap">
+        <button class="btn secondary small" data-rec-toggle="${r.id}">${r.actif?'Pause':'Reprendre'}</button>
+        <button class="btn danger" data-rec-del="${r.id}">Suppr.</button>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty">Aucune dépense récurrente définie pour l'instant.</td></tr>`;
+
+  const actives = (state.recurrences||[]).filter(r=>r.actif);
+  const totalMensuelEquiv = actives.reduce((s,r)=>{
+    const m = Number(r.montant||0);
+    if(r.frequence==='hebdomadaire') return s + m*4.33;
+    if(r.frequence==='annuel') return s + m/12;
+    return s + m;
+  }, 0);
+  document.getElementById('recRecap').innerHTML = `
+    <div class="card"><div class="kpi"><span class="label">Charges fixes actives</span><span class="value">${actives.length}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">Équivalent mensuel total</span><span class="value">${fmt(totalMensuelEquiv)}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">Équivalent annuel total</span><span class="value">${fmt(totalMensuelEquiv*12)}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">En pause</span><span class="value">${(state.recurrences||[]).length-actives.length}</span></div></div>
+  `;
+
+  document.getElementById('recBody').querySelectorAll('[data-rec-toggle]').forEach(b=>b.addEventListener('click', async ()=>{
+    const r = state.recurrences.find(x=>x.id===b.dataset.recToggle);
+    if(r){ r.actif=!r.actif; await persist(); renderRecurrences(); }
+  }));
+  document.getElementById('recBody').querySelectorAll('[data-rec-del]').forEach(b=>b.addEventListener('click', async ()=>{
+    if(!confirm('Supprimer cette dépense récurrente ? Les transactions déjà générées ne seront pas supprimées.')) return;
+    state.recurrences = state.recurrences.filter(x=>x.id!==b.dataset.recDel);
+    await persist(); renderRecurrences();
+  }));
+}
+document.getElementById('recForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const r = {
+    id:cuid(),
+    nom:document.getElementById('recNom').value,
+    categorie:document.getElementById('recCategorie').value,
+    montant:Number(document.getElementById('recMontant').value||0),
+    frequence:document.getElementById('recFrequence').value,
+    prochaineEcheance:document.getElementById('recDateDebut').value,
+    dateFin:document.getElementById('recDateFin').value||'',
+    mode:document.getElementById('recMode').value,
+    notes:document.getElementById('recNotes').value,
+    actif:true
+  };
+  if(!r.nom || !r.montant || !r.prochaineEcheance) return;
+  state.recurrences.push(r);
+  // génère immédiatement si la première échéance est déjà passée ou aujourd'hui
+  genererTransactionsRecurrentes();
+  await persist();
+  e.target.reset();
+  refreshYearOptions();
+  renderAll();
+});
 
 /* ======================= BUDGET MENSUEL ======================= */
 function renderBudget(){
@@ -2701,6 +2851,7 @@ function renderAll(){
   renderParametres();
   renderDashboard();
   renderTransactions();
+  renderRecurrences();
   renderBudget();
   renderRevenus();
   renderCredit();
@@ -2716,17 +2867,27 @@ function renderAll(){
 }
 
 /* ======================= INIT ======================= */
+function showToast(msg, ms=3500){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--primary-dark);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9998;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:90vw;text-align:center;';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), ms);
+}
 (async function init(){
   await loadState();
   if(state.settings && state.settings.pinHash){
     await requireUnlock();
   }
+  const nbGenerees = genererTransactionsRecurrentes();
+  if(nbGenerees>0){ await persist(true); }
   initFilters();
   populateTxSelects();
   document.getElementById('targetConstruction').value = state.targets.construction;
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('txDate').value = today;
   renderAll();
+  if(nbGenerees>0){ showToast(`🔁 ${nbGenerees} dépense${nbGenerees>1?'s':''} récurrente${nbGenerees>1?'s':''} généré${nbGenerees>1?'es':'e'} automatiquement dans Transactions.`); }
 })();
 
 if('serviceWorker' in navigator){
