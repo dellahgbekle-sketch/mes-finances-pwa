@@ -366,6 +366,7 @@ input[type=number]{font-family:var(--mono);}
     </div>
 
     <div class="section-title">Historique des transactions</div>
+    <p class="small-note" style="margin-top:-6px">Filtré par le sélecteur Année/Mois en haut de page (comme les autres onglets), en plus des filtres ci-dessous.</p>
     <div class="filters" style="margin-top:0">
       <label>Filtrer catégorie</label>
       <select id="txFilterCat"><option value="all">Toutes</option></select>
@@ -771,7 +772,7 @@ input[type=number]{font-family:var(--mono);}
     <div class="grid2" style="margin-top:14px">
       <div class="card">
         <div class="section-title" style="margin-top:0">Filtres période</div>
-        <div class="principle"><b>Tableau de bord / Alertes / Suivi annuel / Budget / Revenus</b> — Le filtre Année/Mois en haut de page s'applique à tous ces onglets.</div>
+        <div class="principle"><b>Tableau de bord / Alertes / Suivi annuel / Budget / Revenus / Transactions</b> — Le filtre Année/Mois en haut de page s'applique à tous ces onglets.</div>
         <div class="principle"><b>Investissements</b> — Le "Réalisé" de chaque désignation est calculé sur l'historique complet de vos transactions portant cette catégorie.</div>
       </div>
       <div class="card">
@@ -1736,13 +1737,15 @@ document.getElementById('txFilterCat').addEventListener('change', renderTransact
 document.getElementById('txFilterType').addEventListener('change', renderTransactions);
 
 function renderTransactions(){
+  const {year,month} = currentFilter();
   const fc = document.getElementById('txFilterCat').value;
   const ft = document.getElementById('txFilterType').value;
   let list = state.transactions.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  list = list.filter(t=>txMatchesPeriod(t,year,month));
   if(fc!=='all') list = list.filter(t=>t.categorie===fc);
   if(ft!=='all') list = list.filter(t=>t.type===ft);
   const body = document.getElementById('txBody');
-  if(!list.length){ body.innerHTML = `<tr><td colspan="8" class="empty">Aucune transaction pour ce filtre.</td></tr>`; return; }
+  if(!list.length){ body.innerHTML = `<tr><td colspan="8" class="empty">Aucune transaction pour cette période / ce filtre.</td></tr>`; return; }
   body.innerHTML = list.map(t=>`
     <tr>
       <td>${t.date}</td>
