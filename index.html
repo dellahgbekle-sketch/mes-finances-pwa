@@ -304,6 +304,12 @@ input[type=number]{font-family:var(--mono);}
       <button class="btn secondary" id="paramPinRemove">Retirer le code PIN</button>
     </div>
 
+    <div class="section-title">ℹ️ À propos</div>
+    <div class="card">
+      <div class="kpi"><span class="label">Version de l'application</span><span class="value" id="appVersionText" style="font-size:13px"></span></div>
+      <p class="small-note" style="margin:6px 0 0">En cas de doute sur la mise à jour de l'app, compare ce numéro avec celui annoncé après un déploiement.</p>
+    </div>
+
     <div class="section-title">🔀 Réagencement des menus</div>
     <div class="card">
       <p class="small-note" style="margin-top:0">Réorganisez l'ordre d'affichage des 16 onglets dans la barre de navigation à l'aide des flèches ▲ ▼.</p>
@@ -896,6 +902,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
+const APP_VERSION = 'v28 · 12 sept. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -2104,6 +2111,7 @@ function renderParametres(){
   document.getElementById('paramMoisUrgence').value = s.moisFondsUrgence;
   document.getElementById('paramTauxEndett').value = s.tauxEndettMax;
   document.getElementById('pinStatusText').textContent = s.pinHash ? '✅ Code PIN activé (' + s.pinLength + ' chiffres)' : '◻️ Aucun code PIN défini — application non verrouillée';
+  document.getElementById('appVersionText').textContent = APP_VERSION;
 
   document.getElementById('paramAllocBody').querySelectorAll('[data-alloc]').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
