@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zpAUwRFeiX7ZOqQ2l/086bw/XLUDZJ/ANfSQC2ir0Cw='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <style>
 :root{
@@ -418,6 +418,7 @@ input[type=number]{font-family:var(--mono);}
             <option>Virement</option><option>Mobile Money</option><option>Espèces</option><option>CB</option><option>Chèque</option><option>Autre</option>
           </select>
         </div>
+        <div><label>Référence (optionnel) — {MM} = mois, {YY} = année</label><input type="text" id="recReference" placeholder="Ex : CRED-02 ou LOY-{MM}"></div>
         <div class="full"><label>Notes</label><input type="text" id="recNotes"></div>
         <div class="full">
           <button type="submit" class="btn" id="recSubmitBtn">+ Ajouter la dépense récurrente</button>
@@ -491,10 +492,10 @@ input[type=number]{font-family:var(--mono);}
 
   <!-- MULTI-CREDITS -->
   <section class="panel" id="panel-multicredits">
-    <p class="small-note">Vue consolidée de tous vos engagements de crédit (jusqu'à 5). Renseignez chaque crédit ; la mensualité (PMT) et le coût total sont calculés automatiquement.</p>
+    <p class="small-note">Vue consolidée de tous vos engagements de crédit (jusqu'à 5). Renseignez chaque crédit ; la mensualité (PMT) et le coût total sont calculés automatiquement. <b>Renseignez la date de la 1ʳᵉ échéance et la durée totale : le capital restant dû et les mois restants se mettent alors à jour tout seuls à chaque échéance.</b> Sans ces deux champs, saisissez-les à la main.</p>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>#</th><th>Intitulé</th><th>Référence</th><th class="num">Montant initial</th><th class="num">Capital restant dû</th><th class="num">Taux annuel</th><th class="num">Mensualité</th><th class="num">Réel payé</th><th class="num">Mois restants</th><th class="num">Coût total</th><th class="num">Coût intérêts</th><th>Statut</th></tr></thead>
+        <thead><tr><th>#</th><th>Intitulé</th><th>Référence</th><th class="num">Montant initial</th><th class="num">Capital restant dû</th><th class="num">Taux annuel</th><th class="num">1ʳᵉ échéance</th><th class="num">Durée totale (mois)</th><th class="num">Mensualité</th><th class="num">Réel payé</th><th class="num">Mois restants</th><th class="num">Coût total</th><th class="num">Coût intérêts</th><th>Statut</th></tr></thead>
         <tbody id="mcBody"></tbody>
         <tfoot id="mcFoot"></tfoot>
       </table>
@@ -705,7 +706,7 @@ input[type=number]{font-family:var(--mono);}
     <div class="grid2">
       <div class="card">
         <p class="small-note" style="margin-top:0">🔗 L'objectif de mois de fonds d'urgence se règle désormais uniquement dans <b>⚙️ Paramètres</b> ("Mois fonds urgence cible"), pour éviter toute contradiction entre onglets.</p>
-        <div class="field"><label>Objectif épargne projet construction (<span class="cur-label">FCFA</span>)</label><input type="number" id="targetConstruction" value="3000000"></div>
+        <div class="field"><label>Apport personnel visé pour la construction (<span class="cur-label">FCFA</span>) — distinct du coût total saisi dans Investissements</label><input type="number" id="targetConstruction" value="3000000"></div>
         <button class="btn" id="targetSave">Enregistrer les objectifs</button>
       </div>
       <div class="card">
@@ -902,7 +903,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v28 · 12 sept. 2026';
+const APP_VERSION = 'v29.2 · 1 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -1025,10 +1026,7 @@ function defaultData(){
       {id:"tx_1785679910704_iu0fb5", nom:"Formation MBA", categorie:"Formation", montantCible:500000, epargneManuel:25000, dateCible:"2026-01-01", priorite:"🔶 Haute", note:""},
       {id:"tx_1785679910704_94o0aq", nom:"Apport construction", categorie:"Construction", montantCible:2000000, epargneManuel:0, dateCible:"2027-01-01", priorite:"🔴 Critique", note:""}
     ],
-    recurrences:[
-      {id:"tx_1785679910704_rec001", nom:"Loyer", categorie:"Logement", montant:250000, frequence:"mensuel", prochaineEcheance:"2025-02-02", dateFin:"", mode:"Virement", notes:"", actif:true},
-      {id:"tx_1785679910704_rec002", nom:"Abonnement Canal+", categorie:"Abonnements", montant:15000, frequence:"mensuel", prochaineEcheance:"2025-02-05", dateFin:"", mode:"Mobile Money", notes:"", actif:true}
-    ],
+    recurrences:[],
     patrimoine:{
       actifs:[
         {id:"tx_1785679910704_zv4dhr", nom:"Solde bancaire (épargne)", categorie:"Liquidités", valeur:240000},
@@ -1046,12 +1044,45 @@ function defaultData(){
 }
 function cuid(){return 'tx_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);}
 
+/*SEED_START*/const SEED_STATE = null;/*SEED_END*/
+function afficherBandeauDonneesIllisibles(raw, cle){
+  const b = document.createElement('div');
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#8a1c1c;color:#fff;padding:10px 14px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+  const t = document.createElement('span');
+  t.textContent = '⚠️ Les données enregistrées sur cet appareil sont illisibles. Une copie brute a été conservée (' + cle + '). L\'application démarre avec des données vierges : téléchargez la copie avant toute saisie.';
+  const btn = document.createElement('button'); btn.textContent = 'Télécharger la copie brute';
+  btn.style.cssText = 'padding:6px 10px;border-radius:6px;border:0;cursor:pointer';
+  btn.addEventListener('click', ()=>{
+    const url = URL.createObjectURL(new Blob([raw], {type:'application/json'}));
+    const a = document.createElement('a'); a.href = url; a.download = 'donnees-illisibles-' + Date.now() + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  });
+  const x = document.createElement('button'); x.textContent = 'Fermer';
+  x.style.cssText = 'padding:6px 10px;border-radius:6px;border:0;cursor:pointer';
+  x.addEventListener('click', ()=>b.remove());
+  b.append(t, btn, x); document.body.appendChild(b);
+}
 async function loadState(){
+  let raw = null, lectureOk = true;
   try{
     const res = await window.storage.get('finances-data');
-    if(res && res.value){ state = JSON.parse(res.value); }
-    else { state = defaultData(); await persist(true); }
-  }catch(e){ state = defaultData(); await persist(true); }
+    raw = (res && res.value) ? res.value : null;
+  }catch(e){ lectureOk = false; }
+  const graine = ()=> (typeof SEED_STATE!=='undefined' && SEED_STATE) ? JSON.parse(JSON.stringify(SEED_STATE)) : defaultData();
+  if(!lectureOk){
+    state = graine(); window.__persistBloque = true;   // stockage inaccessible : on n'écrit rien
+    setTimeout(()=>showToast('⚠️ Stockage du navigateur inaccessible : les saisies ne seront pas enregistrées. Utilisez Exporter.', 9000), 600);
+  } else if(raw){
+    try{
+      state = JSON.parse(raw);
+      if(!state || typeof state!=='object' || Array.isArray(state) || !Array.isArray(state.transactions)) throw new Error('structure inattendue');
+    }catch(e){
+      const cle = 'finances-data-illisible-' + Date.now();
+      try{ await window.storage.set(cle, raw); }catch(_){ }
+      state = graine();
+      setTimeout(()=>afficherBandeauDonneesIllisibles(raw, cle), 400);
+    }
+  } else { state = graine(); await persist(true); }
   normalizeState();
   applyCategoryMergesAndRenames();
   ensureTabOrder();
@@ -1114,13 +1145,16 @@ function applyCategoryMergesAndRenames(){
 }
 function normalizeState(){
   if(!state.customCategories) state.customCategories=[];
+  if(!Array.isArray(state.customRevenus)) state.customRevenus=[];
+  state.customRevenus.forEach(n=>{ if(!REVENU_SOURCES.includes(n)) REVENU_SOURCES.push(n); });
+  if(!state.revenusPrevision) state.revenusPrevision={};
   getAllCategories().forEach(([n])=>{ if(!(n in state.budgets)) state.budgets[n]=0; });
   REVENU_SOURCES.forEach(s=>{ if(!(s in state.revenusPrevision)) state.revenusPrevision[s]=0; });
   if(!state.targets) state.targets={urgenceMois:3,construction:3000000};
   if(!state.investProjects) state.investProjects=defaultInvestProjects();
   else { const def=defaultInvestProjects(); Object.keys(def).forEach(k=>{ if(!(k in state.investProjects)) state.investProjects[k]=def[k]; }); }
   if(!state.construction) state.construction={coutTotal:15000000, dateDebut:"2025-01-01", depotMensuel:100000};
-  if(!state.settings) state.settings={allocBesoins:0.5, allocEpargne:0.2, allocDesirs:0.2, allocInvest:0.1,
+  if(!state.settings) state.settings={allocBesoins:0.5, allocEpargne:0.2, allocDesirs:0.15, allocInvest:0.15,
     nom:"", devise:"FCFA", tolerance:0.05, moisFondsUrgence:3, tauxEndettMax:0.33};
   if(!state.maintenance) state.maintenance=[];
   if(!state.multiCredits || state.multiCredits.length<5) state.multiCredits = Array.from({length:5},(_,i)=>(state.multiCredits&&state.multiCredits[i])||{id:cuid(), intitule:`Crédit ${i+1}`, montantInitial:0, capitalRestant:0, taux:7, moisRestants:12});
@@ -1194,6 +1228,7 @@ async function checkAndSyncCategories(){
   return changed;
 }
 async function persist(silent){
+  if(window.__persistBloque) return;
   try{
     await window.storage.set('finances-data', JSON.stringify(state));
     if(!silent){
@@ -1257,7 +1292,7 @@ function requireUnlock(){
     pad.addEventListener('click', onKey);
   });
 }
-function devise(){ return (state.settings&&state.settings.devise)||'FCFA'; }
+function devise(){ return String((state.settings&&state.settings.devise)||'FCFA').replace(/[<>&"'`]/g,'').slice(0,12)||'FCFA'; }
 function updateCurrencyLabels(){
   document.querySelectorAll('.cur-label').forEach(el=>{ el.textContent = devise(); });
 }
@@ -1676,15 +1711,22 @@ function renderDashboard(){
 /* ======================= TRANSACTIONS ======================= */
 function populateTxSelects(){
   const catSel = document.getElementById('txCategorie');
-  catSel.innerHTML = getAllCategories().map(([n,t])=>`<option value="${n}" data-type="${t}">${n}</option>`).join('');
-  catSel.addEventListener('change', ()=>{
-    const opt = catSel.selectedOptions[0];
-    document.getElementById('txType').innerHTML = `<option>${opt.dataset.type}</option>`;
-  });
+  const prevCat = catSel.value;
+  catSel.innerHTML = getAllCategories().map(([n,t])=>`<option value="${escapeHtml(n)}" data-type="${escapeHtml(t)}">${escapeHtml(n)}</option>`).join('');
+  if(!catSel._bound){
+    catSel._bound = true;
+    catSel.addEventListener('change', ()=>{
+      const opt = catSel.selectedOptions[0];
+      if(opt) document.getElementById('txType').innerHTML = `<option>${escapeHtml(opt.dataset.type)}</option>`;
+    });
+  }
+  if(prevCat && [...catSel.options].some(o=>o.value===prevCat)) catSel.value = prevCat;
   catSel.dispatchEvent(new Event('change'));
 
   const filterCat = document.getElementById('txFilterCat');
-  filterCat.innerHTML = '<option value="all">Toutes</option>' + getAllCategories().map(([n])=>`<option value="${n}">${n}</option>`).join('');
+  const prevFilter = filterCat.value;
+  filterCat.innerHTML = '<option value="all">Toutes</option>' + getAllCategories().map(([n])=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if(prevFilter && [...filterCat.options].some(o=>o.value===prevFilter)) filterCat.value = prevFilter;
 }
 document.getElementById('txForm').addEventListener('submit', async e=>{
   e.preventDefault();
@@ -1737,7 +1779,7 @@ function cancelTxEdit(){
   document.getElementById('txSubmitBtn').textContent = '+ Ajouter la transaction';
   document.getElementById('txCancelEdit').style.display = 'none';
   document.getElementById('txForm').reset();
-  document.getElementById('txDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('txDate').value = localISO();
 }
 document.getElementById('txCancelEdit').addEventListener('click', cancelTxEdit);
 document.getElementById('txFilterCat').addEventListener('change', renderTransactions);
@@ -1757,7 +1799,7 @@ function renderTransactions(){
     <tr>
       <td>${t.date}</td>
       <td>${t.recurrenceId?'🔁 ':''}${escapeHtml(t.description)}</td>
-      <td>${t.categorie}</td>
+      <td>${escapeHtml(t.categorie)}</td>
       <td><span class="tag ${t.type}">${t.type}</span></td>
       <td class="num">${fmt(t.montant)}</td>
       <td>${escapeHtml(t.mode)||''}</td>
@@ -1774,43 +1816,53 @@ function renderTransactions(){
 
 /* ======================= DEPENSES RECURRENTES ======================= */
 const FREQ_LABEL = {mensuel:'Mensuelle', hebdomadaire:'Hebdomadaire', annuel:'Annuelle'};
-function avancerDate(d, frequence){
-  const n = new Date(d);
-  if(frequence==='hebdomadaire') n.setDate(n.getDate()+7);
-  else if(frequence==='annuel') n.setFullYear(n.getFullYear()+1);
-  else n.setMonth(n.getMonth()+1);
-  return n;
+function localISO(d){ d = d || new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function refRecurrence(modele, iso){
+  if(!modele) return '';
+  const [y, m] = String(iso).slice(0,10).split('-');
+  return String(modele).replace(/\{MM\}/g, m).replace(/\{YYYY\}/g, y).replace(/\{YY\}/g, y.slice(2));
+}
+function joursDansMois(y, m){ return new Date(Date.UTC(y, m, 0)).getUTCDate(); } // m : 1..12
+// Avance d'une période sans jamais dériver : le jour d'ancrage (ex. 31) est conservé, ramené au dernier jour du mois si besoin.
+function avancerDate(iso, frequence, ancre){
+  const p = String(iso).slice(0,10).split('-').map(Number);
+  let y = p[0], m = p[1]; const d = p[2];
+  if(frequence==='hebdomadaire') return new Date(Date.UTC(y, m-1, d+7)).toISOString().slice(0,10);
+  const jour = Math.min(Number(ancre)||d, 31);
+  if(frequence==='annuel') y += 1; else { m += 1; if(m>12){ m = 1; y += 1; } }
+  return y+'-'+pad2(m)+'-'+pad2(Math.min(jour, joursDansMois(y, m)));
 }
 // Génère automatiquement les transactions dues depuis la dernière ouverture de l'app. Retourne le nombre de transactions créées.
 function genererTransactionsRecurrentes(){
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today = localISO();
   let nbGenerees = 0;
   (state.recurrences||[]).forEach(r=>{
     if(!r.actif || !r.prochaineEcheance) return;
-    let next = new Date(r.prochaineEcheance);
+    let next = String(r.prochaineEcheance).slice(0,10);
+    if(!r.ancre) r.ancre = Number(next.slice(8,10));
     let garde = 0; // sécurité anti-boucle infinie
     while(next<=today && garde<1000){
-      if(r.dateFin && next>new Date(r.dateFin)) break;
+      if(r.dateFin && next>r.dateFin) break;
       state.transactions.unshift({
-        id:cuid(), date:next.toISOString().slice(0,10), description:r.nom,
+        id:cuid(), date:next, description:r.nom,
         categorie:r.categorie, type:catType(r.categorie), montant:Number(r.montant||0),
-        mode:r.mode||'Virement', reference:'', notes:(r.notes?r.notes+' — ':'')+'🔁 généré automatiquement',
+        mode:r.mode||'Virement', reference:refRecurrence(r.reference, next), notes:(r.notes?r.notes+' — ':'')+'🔁 généré automatiquement',
         recurrenceId:r.id
       });
       nbGenerees++;
-      next = avancerDate(next, r.frequence);
+      next = avancerDate(next, r.frequence, r.ancre);
       garde++;
     }
-    r.prochaineEcheance = next.toISOString().slice(0,10);
+    r.prochaineEcheance = next;
   });
   return nbGenerees;
 }
 function renderRecurrences(){
   const cats = getAllCategories().filter(c=>c[1]!=='INVEST' || true); // toutes catégories, y compris personnalisées
   const catSel = document.getElementById('recCategorie');
-  if(catSel.options.length===0){
+  { const prevRec = catSel.value;
     catSel.innerHTML = getAllCategories().map(([n])=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-  }
+    if(prevRec && [...catSel.options].some(o=>o.value===prevRec)) catSel.value = prevRec; }
   const list = (state.recurrences||[]).slice().sort((a,b)=> (a.prochaineEcheance||'').localeCompare(b.prochaineEcheance||''));
   document.getElementById('recBody').innerHTML = list.length ? list.map(r=>{
     const statut = r.actif ? '🔵 Active' : '⏸️ En pause';
@@ -1870,6 +1922,7 @@ function startEditRecurrence(id){
   document.getElementById('recDateFin').value = r.dateFin||'';
   document.getElementById('recMode').value = r.mode||'Virement';
   document.getElementById('recNotes').value = r.notes||'';
+  document.getElementById('recReference').value = r.reference||'';
   document.getElementById('recFormTitle').textContent = '✏️ Modifier : ' + r.nom;
   document.getElementById('recDateDebutLabel').textContent = 'Prochaine échéance';
   document.getElementById('recSubmitBtn').textContent = '💾 Enregistrer les modifications';
@@ -1895,13 +1948,14 @@ document.getElementById('recForm').addEventListener('submit', async e=>{
   const dateFin = document.getElementById('recDateFin').value||'';
   const mode = document.getElementById('recMode').value;
   const notes = document.getElementById('recNotes').value;
+  const reference = document.getElementById('recReference').value.trim();
   if(!nom || !montant || !dateChamp) return;
 
   if(editingRecId){
     const r = state.recurrences.find(x=>x.id===editingRecId);
     if(!r){ cancelEditRecurrence(); return; }
     r.nom = nom; r.categorie = categorie; r.montant = montant; r.frequence = frequence;
-    r.prochaineEcheance = dateChamp; r.dateFin = dateFin; r.mode = mode; r.notes = notes;
+    r.prochaineEcheance = dateChamp; r.ancre = Number(dateChamp.slice(8,10)); r.dateFin = dateFin; r.mode = mode; r.notes = notes; r.reference = reference;
     cancelEditRecurrence();
     await persist();
     refreshYearOptions();
@@ -1909,7 +1963,7 @@ document.getElementById('recForm').addEventListener('submit', async e=>{
     return;
   }
 
-  const r = { id:cuid(), nom, categorie, montant, frequence, prochaineEcheance:dateChamp, dateFin, mode, notes, actif:true };
+  const r = { id:cuid(), nom, categorie, montant, frequence, prochaineEcheance:dateChamp, ancre:Number(dateChamp.slice(8,10)), dateFin, mode, notes, reference, actif:true };
   state.recurrences.push(r);
   // génère immédiatement si la première échéance est déjà passée ou aujourd'hui
   genererTransactionsRecurrentes();
@@ -1939,7 +1993,7 @@ function renderBudget(){
       const status = prevu===0 ? '—' : (consomme<=1 ? '✅ Respecté' : '🔴 Dépassé');
       return `<tr>
         <td>${escapeHtml(name)}</td>
-        <td class="num"><input type="number" data-cat="${name}" value="${prevuMensuel}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+        <td class="num"><input type="number" data-cat="${escapeHtml(name)}" value="${prevuMensuel}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
         <td class="num">${fmt(real)}</td>
         <td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td>
         <td class="num">${prevu>0?pct(consomme):'—'}</td>
@@ -2066,7 +2120,7 @@ function renderCredit(){
   document.getElementById('crSuivi').innerHTML = `
     <div class="card"><div class="kpi"><span class="label">Mensualités dues à ce jour</span><span class="value">${dueCount}</span></div></div>
     <div class="card"><div class="kpi"><span class="label">Montant théorique cumulé</span><span class="value">${fmt(theoriqueCumule)}</span></div></div>
-    <div class="card"><div class="kpi"><span class="label">Montant réellement payé${c.reference?' (réf. '+c.reference+')':''}</span><span class="value">${fmt(reelCumule)}</span></div></div>
+    <div class="card"><div class="kpi"><span class="label">Montant réellement payé${c.reference?' (réf. '+escapeHtml(c.reference)+')':''}</span><span class="value">${fmt(reelCumule)}</span></div></div>
     <div class="card"><div class="kpi"><span class="label">Statut</span><span class="value" style="font-size:13px">${statut} · Capital restant ${fmt(capitalRestant)}</span></div></div>
   `;
 
@@ -2154,11 +2208,26 @@ function computeMultiCreditsRows(){
   const remboursements = state.transactions.filter(t=>t.categorie==='Remboursement crédit bancaire');
   return state.multiCredits.map(c=>{
     const P = Number(c.montantInitial||0);
-    const capital = Number(c.capitalRestant||0);
+    let capital = Number(c.capitalRestant||0);
     const r = Number(c.taux||0)/100/12;
-    const n = Math.max(Number(c.moisRestants||0),0);
+    let n = Math.max(Number(c.moisRestants||0),0);
     let mensualite = 0;
-    if(capital>0 && n>0){
+    // Mode automatique : 1re échéance + durée totale => échéances écoulées, capital et mois restants calculés
+    const dureeTot = Number(c.duree||0);
+    const auto = !!(c.dateDebut && dureeTot>0 && P>0);
+    if(auto){
+      const pm = r>0 ? P*r*Math.pow(1+r,dureeTot)/(Math.pow(1+r,dureeTot)-1) : P/dureeTot;
+      const [dy,dm,dd] = String(c.dateDebut).slice(0,10).split('-').map(Number);
+      const now = new Date();
+      const jourEff = Math.min(dd, joursDansMois(now.getFullYear(), now.getMonth()+1));
+      let k = (now.getFullYear()-dy)*12 + (now.getMonth()+1-dm) + (now.getDate()>=jourEff ? 1 : 0);
+      k = Math.min(Math.max(k,0), dureeTot);
+      let solde = P;
+      for(let i=0;i<k;i++){ solde = solde - (pm - solde*r); }
+      capital = (k>=dureeTot) ? 0 : Math.max(solde,0);
+      n = dureeTot - k;
+      mensualite = (k>=dureeTot) ? 0 : pm;
+    } else if(capital>0 && n>0){
       mensualite = r>0 ? capital*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1) : capital/n;
     }
     const coutTotal = mensualite*n;
@@ -2166,7 +2235,7 @@ function computeMultiCreditsRows(){
     const dateFin = new Date(); dateFin.setMonth(dateFin.getMonth()+n);
     const statut = capital<=0 ? '✅ Soldé' : (n<=0 ? '⚠️ Échéance atteinte' : '🔵 En cours');
     const reelPaye = c.reference ? remboursements.filter(t=>t.reference===c.reference).reduce((s,t)=>s+Number(t.montant),0) : 0;
-    return {...c, montantInitial:P, capitalRestant:capital, mensualite, coutTotal, coutInterets:Math.max(coutInterets,0), moisRestants:n, dateFin, statut, reelPaye};
+    return {...c, montantInitial:P, capitalRestant:capital, mensualite, coutTotal, coutInterets:Math.max(coutInterets,0), moisRestants:n, dateFin, statut, reelPaye, auto};
   });
 }
 function renderMultiCredits(){
@@ -2174,14 +2243,16 @@ function renderMultiCredits(){
   document.getElementById('mcBody').innerHTML = rows.map((r,i)=>`
     <tr>
       <td>${i+1}</td>
-      <td><input type="text" data-mc-field="intitule" data-mc-id="${r.id}" value="${r.intitule}" style="width:120px;border:1px solid var(--line);border-radius:4px;padding:4px 6px"></td>
-      <td><input type="text" data-mc-field="reference" data-mc-id="${r.id}" value="${r.reference||''}" placeholder="Ex : CRED-02" style="width:100px;border:1px solid var(--line);border-radius:4px;padding:4px 6px"></td>
+      <td><input type="text" data-mc-field="intitule" data-mc-id="${r.id}" value="${escapeHtml(r.intitule)}" style="width:120px;border:1px solid var(--line);border-radius:4px;padding:4px 6px"></td>
+      <td><input type="text" data-mc-field="reference" data-mc-id="${r.id}" value="${escapeHtml(r.reference||'')}" placeholder="Ex : CRED-02" style="width:100px;border:1px solid var(--line);border-radius:4px;padding:4px 6px"></td>
       <td class="num"><input type="number" data-mc-field="montantInitial" data-mc-id="${r.id}" value="${r.montantInitial||''}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
-      <td class="num"><input type="number" data-mc-field="capitalRestant" data-mc-id="${r.id}" value="${r.capitalRestant||''}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+      <td class="num"><input type="number" data-mc-field="capitalRestant" data-mc-id="${r.id}" value="${r.auto?Math.round(r.capitalRestant):(r.capitalRestant||'')}" ${r.auto?'readonly title="Calculé automatiquement"':''} style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
       <td class="num"><input type="number" step="0.01" data-mc-field="taux" data-mc-id="${r.id}" value="${r.taux||''}" style="width:70px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+      <td class="num"><input type="date" data-mc-field="dateDebut" data-mc-id="${r.id}" value="${escapeHtml(r.dateDebut||'')}" style="width:130px;border:1px solid var(--line);border-radius:4px;padding:4px 6px"></td>
+      <td class="num"><input type="number" data-mc-field="duree" data-mc-id="${r.id}" value="${r.duree||''}" style="width:70px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
       <td class="num">${fmt(r.mensualite)}</td>
       <td class="num">${r.reference?fmt(r.reelPaye):'—'}</td>
-      <td class="num"><input type="number" data-mc-field="moisRestants" data-mc-id="${r.id}" value="${r.moisRestants||''}" style="width:70px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+      <td class="num"><input type="number" data-mc-field="moisRestants" data-mc-id="${r.id}" value="${r.moisRestants||''}" ${r.auto?'readonly title="Calculé automatiquement"':''} style="width:70px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
       <td class="num">${fmt(r.coutTotal)}</td>
       <td class="num">${fmt(r.coutInterets)}</td>
       <td>${r.statut}</td>
@@ -2189,10 +2260,10 @@ function renderMultiCredits(){
   const totalMensualite = rows.reduce((s,r)=>s+r.mensualite,0);
   const totalCoutTotal = rows.reduce((s,r)=>s+r.coutTotal,0);
   const totalInterets = rows.reduce((s,r)=>s+r.coutInterets,0);
-  document.getElementById('mcFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="6">TOTAL</td><td class="num">${fmt(totalMensualite)}</td><td></td><td></td><td class="num">${fmt(totalCoutTotal)}</td><td class="num">${fmt(totalInterets)}</td><td></td></tr>`;
+  document.getElementById('mcFoot').innerHTML = `<tr style="font-weight:700;background:var(--bg)"><td colspan="8">TOTAL</td><td class="num">${fmt(totalMensualite)}</td><td></td><td></td><td class="num">${fmt(totalCoutTotal)}</td><td class="num">${fmt(totalInterets)}</td><td></td></tr>`;
 
   const revenuMensuelRef = REVENU_SOURCES.reduce((s,src)=>s+Number(state.revenusPrevision[src]||0),0);
-  const {mensualite:mensualiteUnique} = computeAmortization();
+  const mensualiteUnique = mensualiteUniqueActive();
   const totalToutesMensualites = totalMensualite + mensualiteUnique;
   const tauxGlobal = revenuMensuelRef>0 ? totalToutesMensualites/revenuMensuelRef : 0;
   const seuil = (state.settings&&state.settings.tauxEndettMax)||0.33;
@@ -2207,7 +2278,7 @@ function renderMultiCredits(){
       const c = state.multiCredits.find(x=>x.id===inp.dataset.mcId);
       if(!c) return;
       const field = inp.dataset.mcField;
-      c[field] = (field==='intitule'||field==='reference') ? inp.value : Number(inp.value||0);
+      c[field] = (field==='intitule'||field==='reference'||field==='dateDebut') ? inp.value : Number(inp.value||0);
       await persist(); renderMultiCredits(); renderAlertes();
     });
   });
@@ -2218,6 +2289,12 @@ function renderMultiCredits(){
 // Combine le Crédit bancaire unique et les Multi-Crédits actifs, triés par taux décroissant :
 // tout euro/FCFA supplémentaire est dirigé en priorité vers le crédit le plus coûteux (méthode "avalanche"),
 // ce qui minimise mathématiquement le total des intérêts payés par rapport à toute autre répartition.
+function mensualiteUniqueActive(){
+  const c = state.credit;
+  const {mensualite} = computeAmortization();
+  const n = monthsBetween(new Date(c.date||'2025-01-01'), new Date()) + 1;
+  return n <= Number(c.duree||0) ? mensualite : 0;   // 0 si le crédit est entièrement remboursé
+}
 function getUniqueCreditCurrentBalance(){
   const {schedule, mensualite} = computeAmortization();
   const c = state.credit;
@@ -2246,7 +2323,7 @@ function renderAvalancheOrder(){
   const body = document.getElementById('avalancheOrderBody');
   if(!body) return;
   body.innerHTML = debts.length ? debts.map((d,i)=>`
-    <tr><td>${i+1}${i===0?' 🔥':''}</td><td>${d.label}</td><td class="num">${d.taux}%</td><td class="num">${fmt(d.solde)}</td><td class="num">${fmt(d.mensualite)}</td></tr>
+    <tr><td>${i+1}${i===0?' 🔥':''}</td><td>${escapeHtml(d.label)}</td><td class="num">${d.taux}%</td><td class="num">${fmt(d.solde)}</td><td class="num">${fmt(d.mensualite)}</td></tr>
   `).join('') : `<tr><td colspan="5" class="empty">Aucun crédit actif à prioriser pour l'instant.</td></tr>`;
 }
 function simulateAvalancheRun(debtsInput, extra){
@@ -2395,7 +2472,7 @@ document.getElementById('maintForm').addEventListener('submit', async e=>{
     mode:mode,
     intervalle:Number(document.getElementById('maintIntervalle').value||12),
     intervalleKm:Number(document.getElementById('maintIntervalleKm').value||10000),
-    derniere:document.getElementById('maintDerniere').value || new Date().toISOString().slice(0,10),
+    derniere:document.getElementById('maintDerniere').value || localISO(),
     kmDerniere:Number(document.getElementById('maintKmDerniere').value||0),
     kmActuel:Number(document.getElementById('maintKmActuel').value||0),
     coutEstime:Number(document.getElementById('maintCoutEstime').value||0),
@@ -2429,7 +2506,7 @@ function computeObjectifsRows(){
 function populateObjCategorieLiee(){
   const sel = document.getElementById('objCategorieLiee');
   const current = sel.value;
-  sel.innerHTML = '<option value="">— Aucune (saisie manuelle) —</option>' + getAllCategories().map(([n])=>`<option value="${n}">${n}</option>`).join('');
+  sel.innerHTML = '<option value="">— Aucune (saisie manuelle) —</option>' + getAllCategories().map(([n])=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
   sel.value = current;
 }
 function renderObjectifs(){
@@ -2448,7 +2525,7 @@ function renderObjectifs(){
       <td>${o.dateCible||''}</td>
       <td class="num">${fmt(o.depotNecessaire)}</td>
       <td>${o.statut}</td>
-      <td>${o.priorite}</td>
+      <td>${escapeHtml(o.priorite)}</td>
       <td><button class="btn danger" data-obj-del="${o.id}">Suppr.</button></td>
     </tr>`).join('') : `<tr><td colspan="13" class="empty">Aucun objectif défini pour l'instant.</td></tr>`;
   const totalCible = rows.reduce((s,o)=>s+o.cible,0);
@@ -2528,8 +2605,8 @@ function renderPatrimoine(){
   for(let i=0;i<maxRows;i++){
     const ac = actifCats[i], pc = passifCats[i];
     bilanRows += `<tr>
-      <td>${ac||''}</td><td class="num">${ac?fmt(actifsParCat[ac]):''}</td>
-      <td>${pc||''}</td><td class="num">${pc?fmt(passifsParCat[pc]):''}</td>
+      <td>${escapeHtml(ac||'')}</td><td class="num">${ac?fmt(actifsParCat[ac]):''}</td>
+      <td>${escapeHtml(pc||'')}</td><td class="num">${pc?fmt(passifsParCat[pc]):''}</td>
     </tr>`;
   }
   bilanRows += `<tr style="font-weight:700;background:var(--bg)"><td>TOTAL ACTIFS</td><td class="num">${fmt(totalActifs)}</td><td>TOTAL PASSIFS</td><td class="num">${fmt(totalPassifs)}</td></tr>`;
@@ -2578,7 +2655,6 @@ function renderProjection(){
   const {mensualite:mensualiteUnique} = computeAmortization();
   const mcRows = computeMultiCreditsRows().filter(r=>Number(r.capitalRestant||0)>0);
   const mensualiteMulti = mcRows.reduce((s,r)=>s+r.mensualite,0);
-  const creditMensuel = mensualiteUnique + mensualiteMulti;
 
   const s = state.settings;
   const today = new Date();
@@ -2595,7 +2671,9 @@ function renderProjection(){
   const actifsInitiaux = state.patrimoine.actifs.reduce((sum,a)=>sum+Number(a.valeur||0),0);
 
   // --- Bases fixes pour Besoins/Désirs : indexées uniquement sur l'inflation (corrige la double capitalisation relevée par l'audit) ---
-  const besoinsBase = p.revenu * s.allocBesoins;
+  // Le poste budgétaire « Remboursement crédit bancaire » fait partie de l'enveloppe Besoins : on le retire de l'enveloppe, les mensualités réelles sont ajoutées ligne par ligne
+  const creditBudgete = Number((state.budgets||{})['Remboursement crédit bancaire']||0);
+  const besoinsBase = Math.max(p.revenu * s.allocBesoins - creditBudgete, 0);
   const desirsBase = p.revenu * s.allocDesirs;
 
   let cumulEpargne = 0;
@@ -2606,9 +2684,12 @@ function renderProjection(){
     const desirs = desirsBase * Math.pow(1+Number(p.inflation||0), m);
     const epargneMois = revenu * s.allocEpargne;
     const invest = revenu * s.allocInvest;
+    const creditUnique = (dueCountCU + m <= Number(state.credit.duree||0)) ? mensualiteUnique : 0;   // crédit unique arrêté après sa dernière échéance
+    const creditMulti = mcRows.reduce((sum,r)=> sum + (m <= Number(r.moisRestants||0) ? r.mensualite : 0), 0); // idem Multi-Crédits
+    const creditMensuel = creditUnique + creditMulti;
     const totalCharges = besoins + epargneMois + desirs + invest + creditMensuel;
     const solde = revenu - totalCharges;
-    cumulEpargne = cumulEpargne*(1+Number(p.rendement||0)) + epargneMois + Math.max(solde,0);
+    cumulEpargne = (cumulEpargne>0 ? cumulEpargne*(1+Number(p.rendement||0)) : cumulEpargne) + epargneMois + solde; // un déficit mensuel réduit l'épargne cumulée
 
     // Amortissement réel (capital uniquement) du crédit unique et de chaque Multi-Crédit actif
     if(soldeCU>0){
@@ -2667,15 +2748,15 @@ function renderInvestissements(){
       const statut = Number(proj.budget||0)>0 ? (real<=Number(proj.budget)?'✅ Respecté':'🔴 Dépassement') : (real>0?'Réalisé':'À planifier');
       return `<tr>
         <td>${escapeHtml(name)}</td>
-        <td><select data-invest-prio="${name}">
+        <td><select data-invest-prio="${escapeHtml(name)}">
           ${['Bas','Moyen','Haut'].map(p=>`<option value="${p}" ${proj.priorite===p?'selected':''}>${p}</option>`).join('')}
         </select></td>
-        <td class="num"><input type="number" data-invest-budget="${name}" value="${proj.budget||''}" placeholder="0" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
+        <td class="num"><input type="number" data-invest-budget="${escapeHtml(name)}" value="${proj.budget||''}" placeholder="0" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
         <td class="num">${fmt(real)}</td>
         <td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td>
         <td>${statut}</td>
-        <td style="text-align:center"><input type="checkbox" data-invest-paye="${name}" ${proj.paye?'checked':''}></td>
-        <td style="text-align:center"><input type="checkbox" data-invest-urgent="${name}" ${proj.urgent?'checked':''}></td>
+        <td style="text-align:center"><input type="checkbox" data-invest-paye="${escapeHtml(name)}" ${proj.paye?'checked':''}></td>
+        <td style="text-align:center"><input type="checkbox" data-invest-urgent="${escapeHtml(name)}" ${proj.urgent?'checked':''}></td>
       </tr>`;
     }).join('');
     const groupStatut = totalBudget>0 ? (totalReal<=totalBudget?'✅ Budget respecté':'🔴 Dépassement') : '—';
@@ -2747,7 +2828,7 @@ function renderReferentiel(){
   body.innerHTML = all.map(([name,type])=>{
     const isCustom = customNames.has(name);
     return `<tr><td>${escapeHtml(name)}</td><td><span class="tag ${type}">${type}</span></td>
-      <td>${isCustom?`<button class="btn danger" data-ref-del="${name}">Suppr.</button>`:''}</td></tr>`;
+      <td>${isCustom?`<button class="btn danger" data-ref-del="${escapeHtml(name)}">Suppr.</button>`:''}</td></tr>`;
   }).join('') + REVENU_SOURCES.map(name=>`<tr><td>${escapeHtml(name)}</td><td><span class="tag REVENU">REVENU</span></td><td></td></tr>`).join('');
   body.querySelectorAll('[data-ref-del]').forEach(btn=>btn.addEventListener('click', async ()=>{
     state.customCategories = state.customCategories.filter(c=>c[0]!==btn.dataset.refDel);
@@ -2760,7 +2841,7 @@ document.getElementById('refAddBtn').addEventListener('click', async ()=>{
   const type = document.getElementById('refNewType').value;
   if(!name) return;
   if(getAllCategories().some(c=>c[0]===name) || REVENU_SOURCES.includes(name)){ alert('Cette catégorie existe déjà.'); return; }
-  if(type==='REVENU'){ REVENU_SOURCES.push(name); state.revenusPrevision[name]=0; }
+  if(type==='REVENU'){ REVENU_SOURCES.push(name); state.customRevenus.push(name); state.revenusPrevision[name]=0; }
   else { state.customCategories.push([name,type]); state.budgets[name]=0; }
   document.getElementById('refNewName').value='';
   await persist(); renderAll();
@@ -2847,7 +2928,7 @@ function renderAlertes(){
 
   const nbSources = REVENU_SOURCES.filter(s=>revenusRealiseParSource(s,year,month)>0).length;
 
-  const {mensualite} = computeAmortization();
+  const mensualite = mensualiteUniqueActive();
   const mensualiteMultiCredits = computeMultiCreditsRows().reduce((s,r)=>s+r.mensualite,0);
   const mensualiteTotale = mensualite + mensualiteMultiCredits;
   const revenuMensuelRef = REVENU_SOURCES.reduce((s,src)=>s+Number(state.revenusPrevision[src]||0),0);
@@ -2884,7 +2965,7 @@ function renderAlertes(){
     {label:'Budget Formation & Perfectionnement utilisé (%)', val:formationUtil, seuil:0.8, fmtPct:true, higherBetter:true, prio:'Moyenne', reco:"Utiliser au moins 80% du budget formation chaque mois (toutes catégories de formation confondues). C'est un investissement à ne pas négliger."},
     {label:'Diversification revenus (nb sources)', val:nbSources, seuil:2, fmtPct:false, higherBetter:true, prio:'Haute', reco:"Avoir au moins 2 sources de revenus réduit la vulnérabilité en cas de perte d'emploi."},
     {label:'Taux d\'endettement (mensualités, tous crédits)', val:tauxEndettement, seuil:tauxEndettMax, fmtPct:true, higherBetter:false, prio:'Critique', reco:`Norme bancaire : les mensualités ne devraient pas dépasser ${Math.round(tauxEndettMax*100)}% du revenu.`},
-    {label:'Avancement épargne construction', val:avancementConstruction, seuil:1, fmtPct:true, higherBetter:true, prio:'Moyenne', reco:"Maintenir le dépôt mensuel cible pour atteindre l'objectif dans les délais prévus."},
+    {label:'Avancement de l\'apport personnel construction', val:avancementConstruction, seuil:1, fmtPct:true, higherBetter:true, prio:'Moyenne', reco:"Maintenir le dépôt mensuel cible pour atteindre l'objectif dans les délais prévus."},
     {label:`Budget prévu Besoins vs règle (${Math.round(getGroupTarget('BESOINS')*100)}%)`, val:partPrevuBesoins, seuil:getGroupTarget('BESOINS'), fmtPct:true, higherBetter:false, prio:'Moyenne', reco:"Le budget que vous avez planifié (pas seulement le réalisé) dépasse la règle établie. Purement informatif : vous pouvez continuer à ajuster vos postes librement.", info:true},
     {label:`Budget prévu Épargne vs règle (${Math.round(getGroupTarget('EPARGNE')*100)}%)`, val:partPrevuEpargne, seuil:getGroupTarget('EPARGNE'), fmtPct:true, higherBetter:false, prio:'Moyenne', reco:"Le budget prévu pour l'Épargne dépasse la part fixée par la règle. Purement informatif, aucune saisie n'est bloquée.", info:true},
     {label:`Budget prévu Désirs vs règle (${Math.round(getGroupTarget('DESIRS')*100)}%)`, val:partPrevuDesirs, seuil:getGroupTarget('DESIRS'), fmtPct:true, higherBetter:false, prio:'Moyenne', reco:"Le budget prévu pour les Désirs dépasse la part fixée par la règle. Purement informatif, aucune saisie n'est bloquée.", info:true},
@@ -2919,6 +3000,7 @@ document.getElementById('targetSave').addEventListener('click', async ()=>{
 
 /* ======================= RENDER ALL ======================= */
 function renderAll(){
+  if(typeof populateTxSelects==='function'){ populateTxSelects(); populateObjCategorieLiee(); }
   updateCurrencyLabels();
   updateHeaderRule();
   updateHeaderUserName();
@@ -2982,8 +3064,7 @@ function handleLaunchParams(){
   initFilters();
   populateTxSelects();
   document.getElementById('targetConstruction').value = state.targets.construction;
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('txDate').value = today;
+  document.getElementById('txDate').value = localISO();
   renderAll();
   handleLaunchParams();
   if(nbGenerees>0){ showToast(`🔁 ${nbGenerees} dépense${nbGenerees>1?'s':''} récurrente${nbGenerees>1?'s':''} généré${nbGenerees>1?'es':'e'} automatiquement dans Transactions.`); }
