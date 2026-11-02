@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MLqP8esAoEmlJh+cEguhxQ9QmVMtVZTJECssNLeXAnw='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IgZnLkI2ThVqRZwWeUUKuj45ELJvrTHoSmT94RfTVMg='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <style>
 :root{
@@ -925,7 +925,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v30-alpha · 1 nov. 2026';
+const APP_VERSION = 'v30-alpha2 · 2 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -3551,7 +3551,7 @@ const SYNC = (function(){
   }
   function startPolling(){
     clearInterval(poller);
-    poller = setInterval(()=>{ if(!document.hidden && navigator.onLine!==false) run('sondage'); }, 90000);
+    poller = setInterval(()=>{ if(!document.hidden && navigator.onLine!==false) run('sondage'); }, 20000);   // ≈ 4 300 lectures/jour/appareil ouvert en continu (quota gratuit : 50 000)
   }
 
   /* ---------- initialisation ---------- */
@@ -3564,6 +3564,7 @@ const SYNC = (function(){
     window.addEventListener('online', ()=>run('réseau'));
     window.addEventListener('offline', ()=>{ if(meta&&meta.enabled) setStatus('offline'); });
     document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) run('retour'); });
+    window.addEventListener('focus', ()=>{ if(Date.now()-(meta&&meta.lastOk||0) > 5000) run('focus'); });
     window.addEventListener('pagehide', ()=>{ if(meta) saveMeta(); });
     setInterval(()=>{ if(meta && meta.enabled && status==='ok') render(); }, 30000);
     await loadMeta();
