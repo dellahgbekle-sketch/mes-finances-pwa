@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mes-finances-v29-2';
+const CACHE_NAME = 'mes-finances-v30-alpha';
 const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png', './vendor/chart.umd.min.js'];
 
 self.addEventListener('install', event => {

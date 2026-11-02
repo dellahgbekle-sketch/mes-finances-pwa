@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zpAUwRFeiX7ZOqQ2l/086bw/XLUDZJ/ANfSQC2ir0Cw='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MLqP8esAoEmlJh+cEguhxQ9QmVMtVZTJECssNLeXAnw='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <style>
 :root{
@@ -219,6 +219,7 @@ input[type=number]{font-family:var(--mono);}
       <option value="all">Tous les mois</option>
     </select>
     <span class="save-msg" id="saveMsg">✓ enregistré</span>
+    <span id="syncBadge" style="display:none;font-size:12px;font-weight:700;cursor:default"></span>
   </div>
 
   <!-- DASHBOARD -->
@@ -290,6 +291,27 @@ input[type=number]{font-family:var(--mono);}
       </div>
       <button class="btn" id="paramSave">Enregistrer les paramètres</button>
       <p class="small-note">💡 Modifiez les % ci-dessus (ils doivent totaliser 100%). Les montants budgétaires dans toutes les feuilles s'actualisent automatiquement.</p>
+    </div>
+
+    <div class="section-title">☁️ Synchronisation entre appareils <span style="font-size:11px;font-weight:700;background:#fde68a;color:#7a4b00;border-radius:10px;padding:1px 8px;margin-left:6px">bêta</span></div>
+    <div class="card" id="syncCard">
+      <p class="small-note" style="margin-top:0">Vos données sont <b>chiffrées sur cet appareil</b> avant d'être envoyées : sans votre phrase secrète, personne (pas même Google) ne peut les lire. Utilisez le même compte et la même phrase sur le PC, le téléphone et la version web.</p>
+      <div id="syncStatusLine" class="small-note" style="font-weight:700;color:var(--ink)">☁️ Non connecté</div>
+      <div id="syncFormOut">
+        <div class="two-col-form" style="margin-top:10px">
+          <div class="field"><label>E-mail du compte</label><input type="email" id="syncEmail" autocomplete="username" placeholder="vous@exemple.com"></div>
+          <div class="field" id="syncPassWrap"><label>Mot de passe du compte</label><input type="password" id="syncPass" autocomplete="current-password"></div>
+          <div class="field"><label>Phrase secrète de chiffrement (8 caractères min.)</label><input type="password" id="syncPhrase" autocomplete="off"></div>
+          <div class="field" id="syncPhrase2Wrap" style="display:none"><label>Confirmer la phrase secrète (1re connexion)</label><input type="password" id="syncPhrase2" autocomplete="off"></div>
+        </div>
+        <label class="small-note" style="display:block;margin:6px 0"><input type="checkbox" id="syncShowPhrase"> Afficher les mots de passe</label>
+        <button class="btn" id="syncConnectBtn">Connecter cet appareil</button>
+      </div>
+      <div id="syncFormIn" style="display:none;margin-top:8px">
+        <button class="btn" id="syncNowBtn">Synchroniser maintenant</button>
+        <button class="btn secondary" id="syncOffBtn">Déconnecter cet appareil</button>
+      </div>
+      <p class="small-note">⚠️ La phrase secrète ne peut <b>pas</b> être récupérée si vous l'oubliez : notez-la en lieu sûr. Continuez à faire un export JSON de temps en temps comme copie de secours.</p>
     </div>
 
     <div class="section-title">🔒 Sécurité</div>
@@ -903,7 +925,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v29.2 · 1 nov. 2026';
+const APP_VERSION = 'v30-alpha · 1 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -1231,6 +1253,7 @@ async function persist(silent){
   if(window.__persistBloque) return;
   try{
     await window.storage.set('finances-data', JSON.stringify(state));
+    if(window.__syncHook) window.__syncHook();
     if(!silent){
       const m=document.getElementById('saveMsg');
       m.classList.add('show'); clearTimeout(saveTimer);
@@ -1463,7 +1486,8 @@ async function importBackupFromFile(file){
   const nbTx = incoming.transactions.length;
   const ok = confirm(
     `Importer cette sauvegarde (${nbTx} transaction(s)) ?\n\n`+
-    `⚠️ Toutes les données actuellement enregistrées sur cet appareil seront remplacées et ne pourront pas être récupérées, sauf si vous en avez vous-même une autre sauvegarde.`
+    `⚠️ Toutes les données actuellement enregistrées sur cet appareil seront remplacées et ne pourront pas être récupérées, sauf si vous en avez vous-même une autre sauvegarde.`+
+    ((typeof SYNC!=='undefined' && SYNC.meta && SYNC.meta.enabled) ? `\n\n☁️ La synchronisation est active : ce remplacement sera AUSSI appliqué à vos autres appareils.` : ''),
   );
   if(!ok) return false;
   state = incoming;
@@ -1843,8 +1867,9 @@ function genererTransactionsRecurrentes(){
     let garde = 0; // sécurité anti-boucle infinie
     while(next<=today && garde<1000){
       if(r.dateFin && next>r.dateFin) break;
-      state.transactions.unshift({
-        id:cuid(), date:next, description:r.nom,
+      const idRec = 'rt_'+r.id+'_'+next;
+      if(!state.transactions.some(t=>t.id===idRec)) state.transactions.unshift({
+        id:idRec, date:next, description:r.nom,
         categorie:r.categorie, type:catType(r.categorie), montant:Number(r.montant||0),
         mode:r.mode||'Virement', reference:refRecurrence(r.reference, next), notes:(r.notes?r.notes+' — ':'')+'🔁 généré automatiquement',
         recurrenceId:r.id
@@ -3054,6 +3079,504 @@ function handleLaunchParams(){
     window.history.replaceState({}, '', window.location.pathname);
   }
 }
+/* ======================= SYNCHRONISATION CHIFFRÉE ENTRE APPAREILS (v30-alpha) =======================
+   - Chaque élément (transaction, objectif, budget d'une catégorie, etc.) devient un enregistrement séparé.
+   - Chaque enregistrement est chiffré SUR L'APPAREIL (AES-GCM 256 bits) avant l'envoi : le serveur ne voit que du texte illisible.
+   - Clé dérivée de la « phrase secrète » (PBKDF2-SHA256, 600 000 itérations). La phrase n'est jamais envoyée ni stockée.
+   - Stockage : Firebase (Auth + Firestore) via l'API REST, sans bibliothèque externe.
+   - Conflit : la modification la plus récente gagne, élément par élément. Suppressions = marqueurs (« tombstones »).
+   - Le code PIN et l'ordre des onglets restent propres à chaque appareil (non synchronisés). */
+const SYNC = (function(){
+  const CFG = {apiKey:'AIzaSyBEmV8bqpvhNFQahtG88KVJ4uEPWs-mXak', projectId:'mes-finances-9ff42'};
+  const DOCS = 'projects/'+CFG.projectId+'/databases/(default)/documents';
+  const FS = 'https://firestore.googleapis.com/v1/'+DOCS;
+  const ITER = 600000, META_KEY = 'sync-meta', OVERLAP_MS = 10000, BATCH = 80, PAGE = 1000;
+  const TE = new TextEncoder(), TD = new TextDecoder();
+  let meta = null, keys = null, idToken = null, idExp = 0;
+  let busy = false, rerun = false, debounce = null, poller = null, deferrals = 0, conflicts = 0;
+  let status = 'off', statusDetail = '', lastErr = '', bad = 0;
+
+  /* ---------- utilitaires ---------- */
+  const b64e = u8 => { let s=''; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000)); return btoa(s); };
+  const b64d = s => Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+  const rnd = n => crypto.getRandomValues(new Uint8Array(n));
+  const hex = u8 => Array.from(u8).map(b=>b.toString(16).padStart(2,'0')).join('');
+  function canon(v){
+    if(v===null || typeof v!=='object') return JSON.stringify(v===undefined?null:v);
+    if(Array.isArray(v)) return '['+v.map(canon).join(',')+']';
+    return '{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}';
+  }
+  function hashOf(v){ // cyrb53 : suffisant pour détecter un changement local
+    const s = canon(v); let h1=0xdeadbeef, h2=0x41c6ce57;
+    for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); h1=Math.imul(h1^c,2654435761); h2=Math.imul(h2^c,1597334677); }
+    h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+    h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+    return (4294967296*(2097151&h2)+(h1>>>0)).toString(36)+'.'+s.length;
+  }
+  function normTs(s){ // "2026-11-01T10:00:00.12Z" -> 9 décimales, comparable en texte
+    const m = /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d+))?Z$/.exec(String(s||''));
+    return m ? m[1]+'.'+(m[2]||'').padEnd(9,'0').slice(0,9)+'Z' : null;
+  }
+  function tsMinus(s, ms){ const m=/^(.*)\.(\d{9})Z$/.exec(s); const d=new Date(m[1]+'Z'); return new Date(d.getTime()-ms).toISOString().replace(/\.\d{3}Z$/,'')+'.'+m[2]+'Z'; }
+  function errFR(e){
+    const c = String((e&&e.code)||(e&&e.message)||e);
+    if(/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD|EMAIL_NOT_FOUND/.test(c)) return "E-mail ou mot de passe du compte incorrect.";
+    if(/TOO_MANY_ATTEMPTS/.test(c)) return "Trop d'essais. Patientez quelques minutes puis réessayez.";
+    if(/USER_DISABLED/.test(c)) return "Ce compte est désactivé dans Firebase.";
+    if(/INVALID_EMAIL/.test(c)) return "Adresse e-mail invalide.";
+    if(/API key not valid|API_KEY|referer|REFERER|blocked/i.test(c)) return "Accès refusé par la clé API (restriction de site). Utilisez l'application installée ou la page GitHub, pas le fichier ouvert directement.";
+    if(/PERMISSION_DENIED|Missing or insufficient/.test(c)) return "Accès refusé par les règles Firestore (vérifiez qu'elles sont publiées).";
+    if(/QUOTA|RESOURCE_EXHAUSTED/.test(c)) return "Quota gratuit Firebase atteint pour aujourd'hui. Réessayez demain.";
+    if(e instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(c)) return "Pas de connexion Internet.";
+    return c.slice(0,160);
+  }
+
+  /* ---------- stockage local (méta + clés non extractables) ---------- */
+  async function loadMeta(){ try{ const r = await window.storage.get(META_KEY); meta = r && r.value ? JSON.parse(r.value) : null; }catch(_){ meta = null; } }
+  async function saveMeta(){ if(meta){ try{ await window.storage.set(META_KEY, JSON.stringify(meta)); }catch(e){ console.error('sync-meta', e); } } }
+  function idb(){ return new Promise((res,rej)=>{ if(!window.indexedDB) return rej(new Error('no idb')); const r=indexedDB.open('mf-sync',1); r.onupgradeneeded=()=>r.result.createObjectStore('k'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const q=db.transaction('k').objectStore('k').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+  async function idbSet(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction('k','readwrite'); t.objectStore('k').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+  async function idbDel(k){ try{ const db=await idb(); await new Promise(res=>{ const t=db.transaction('k','readwrite'); t.objectStore('k').delete(k); t.oncomplete=res; t.onerror=res; }); }catch(_){ } }
+
+  /* ---------- chiffrement ---------- */
+  async function deriveKeys(phrase, saltB64){
+    const base = await crypto.subtle.importKey('raw', TE.encode(String(phrase).normalize('NFKC')), 'PBKDF2', false, ['deriveBits']);
+    const bits = new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt:b64d(saltB64), iterations:ITER}, base, 512));
+    const aes = await crypto.subtle.importKey('raw', bits.slice(0,32), 'AES-GCM', false, ['encrypt','decrypt']);
+    const mac = await crypto.subtle.importKey('raw', bits.slice(32), {name:'HMAC', hash:'SHA-256'}, false, ['sign']);
+    bits.fill(0);
+    return {aes, mac};
+  }
+  async function enc(obj, aad){
+    const iv = rnd(12);
+    const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv, additionalData:TE.encode(aad)}, keys.aes, TE.encode(typeof obj==='string'?obj:JSON.stringify(obj)));
+    return {c:b64e(new Uint8Array(ct)), iv:b64e(iv)};
+  }
+  async function dec(c, iv, aad){
+    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64d(iv), additionalData:TE.encode(aad)}, keys.aes, b64d(c));
+    return TD.decode(pt);
+  }
+  async function docIdOf(key){ return hex(new Uint8Array(await crypto.subtle.sign('HMAC', keys.mac, TE.encode(key))).subarray(0,16)); }
+  const VERIF_TXT = 'mes-finances-v30';
+  async function makeVerifier(){ const e = await enc(VERIF_TXT, 'verifier'); return e.iv+'.'+e.c; }
+  async function checkVerifier(v){ try{ const [iv,c] = String(v).split('.'); return (await dec(c,iv,'verifier'))===VERIF_TXT; }catch(_){ return false; } }
+
+  /* ---------- API Firebase (REST) ---------- */
+  async function jfetch(url, opt){
+    const r = await fetch(url, opt); let j = null;
+    try{ j = await r.json(); }catch(_){ }
+    if(!r.ok){ const er = (j && (Array.isArray(j)?j[0]:j).error) || {}; const e = new Error(er.message || ('HTTP '+r.status)); e.status = r.status; e.fs = er.status || ''; e.code = er.message || er.status || ''; throw e; }
+    return j;
+  }
+  async function signIn(email, pw){
+    return jfetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+CFG.apiKey,
+      {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pw, returnSecureToken:true})});
+  }
+  function setToken(t, exp){ idToken = t; idExp = Date.now() + (Number(exp)||3600)*1000; }
+  async function token(){
+    if(idToken && Date.now() < idExp-60000) return idToken;
+    if(!meta || !meta.rt){ const e = new Error('AUTH'); e.auth = true; throw e; }
+    try{
+      const j = await jfetch('https://securetoken.googleapis.com/v1/token?key='+CFG.apiKey,
+        {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(meta.rt)});
+      setToken(j.id_token, j.expires_in); if(j.refresh_token && j.refresh_token!==meta.rt){ meta.rt = j.refresh_token; await saveMeta(); }
+      return idToken;
+    }catch(e){ if(e.status===400 || e.status===401){ const x = new Error('AUTH'); x.auth = true; throw x; } throw e; }
+  }
+  async function api(path, body, retried){
+    const t = await token();
+    try{ return await jfetch('https://firestore.googleapis.com/v1/'+path, {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+t}, body:JSON.stringify(body)}); }
+    catch(e){ if(e.status===401 && !retried){ idToken = null; idExp = 0; return api(path, body, true); } throw e; }
+  }
+  async function getMetaDoc(uid){
+    const name = DOCS+'/users/'+uid+'/meta/crypto';
+    const r = await api(DOCS+':batchGet', {documents:[name]});
+    const f = r && r[0] && r[0].found; if(!f) return null;
+    return {salt:f.fields.salt.stringValue, verifier:f.fields.verifier.stringValue};
+  }
+  async function createMetaDoc(uid, salt, verifier){
+    await api(DOCS+':commit', {writes:[{update:{name:DOCS+'/users/'+uid+'/meta/crypto', fields:{salt:{stringValue:salt}, kdf:{stringValue:'pbkdf2-sha256-'+ITER}, verifier:{stringValue:verifier}, v:{integerValue:'1'}}}, currentDocument:{exists:false}}]});
+  }
+  async function pullRaw(curTs, curId, limit){
+    const out = []; out.rt = null;
+    for(;;){
+      const q = {from:[{collectionId:'records'}], orderBy:[{field:{fieldPath:'ts'}, direction:'ASCENDING'}, {field:{fieldPath:'__name__'}, direction:'ASCENDING'}], limit:limit||PAGE};
+      if(curTs && curId) q.startAt = {values:[{timestampValue:curTs}, {referenceValue:DOCS+'/users/'+meta.uid+'/records/'+curId}], before:false};   // curseur exclusif : rien n'est relu
+      const r = await api(DOCS+'/users/'+meta.uid+':runQuery', {structuredQuery:q});
+      const docs = (r||[]).filter(x=>x.document).map(x=>x.document);
+      const rtm = normTs((r||[]).map(x=>x.readTime).filter(Boolean).pop()); if(rtm) out.rt = rtm;
+      docs.forEach(d=>out.push({id:d.name.split('/').pop(), f:d.fields, ut:d.updateTime, ts:normTs(d.fields.ts ? d.fields.ts.timestampValue : null) || normTs(d.updateTime)}));
+      if(limit || docs.length < PAGE) break;
+      const last = out[out.length-1]; curTs = last.ts; curId = last.id;
+    }
+    return out;
+  }
+  /* Le curseur n'avance que jusqu'aux documents vieux de plus de 10 s (par rapport à l'heure de lecture du serveur) :
+     un enregistrement validé « en retard » par un autre appareil ne peut ainsi jamais être manqué. */
+  function cursorFrom(raw, prevTs, prevId){
+    let ts = prevTs || null, id = prevId || null;
+    if(raw.rt){ const cut = tsMinus(raw.rt, OVERLAP_MS); raw.forEach(x=>{ if(x.ts<=cut){ ts = x.ts; id = x.id; } }); }
+    return {ts, id};
+  }
+  async function decryptAll(raw){
+    const items = []; let nbBad = 0;
+    for(const d of raw){
+      try{
+        const p = JSON.parse(await dec(d.f.c.stringValue, d.f.iv.stringValue, d.id));
+        if(!p || typeof p.k!=='string' || (await docIdOf(p.k))!==d.id) throw new Error('id');
+        items.push({k:p.k, t:Number(p.t)||0, dev:String(p.dev||''), del:!!p.del, d:p.d, ts:d.ts, ut:d.ut});
+      }catch(_){ nbBad++; }
+    }
+    return {items, nbBad};
+  }
+
+  /* ---------- modèle de données : état <-> enregistrements ---------- */
+  const ARR = {tx:()=>state.transactions, mnt:()=>state.maintenance, obj:()=>state.objectifs, rec:()=>state.recurrences,
+               act:()=>state.patrimoine.actifs, pas:()=>state.patrimoine.passifs};
+  const DICT = {bud:'budgets', inv:'investProjects', rev:'revenus'};
+  const NOT_TOP = new Set(['transactions','maintenance','objectifs','recurrences','budgets','investProjects','revenus','patrimoine','tabOrder']);
+  function ensureArrays(){
+    if(!state.patrimoine || typeof state.patrimoine!=='object') state.patrimoine = {actifs:[], passifs:[]};
+    ['actifs','passifs'].forEach(k=>{ if(!Array.isArray(state.patrimoine[k])) state.patrimoine[k] = []; });
+    ['transactions','maintenance','objectifs','recurrences'].forEach(k=>{ if(!Array.isArray(state[k])) state[k] = []; });
+    ['budgets','investProjects','revenus'].forEach(k=>{ if(!state[k] || typeof state[k]!=='object') state[k] = {}; });
+  }
+  function ensureIds(){
+    let ch = false;
+    Object.keys(ARR).forEach(p=>ARR[p]().forEach(it=>{ if(it && typeof it==='object' && !it.id){ it.id = cuid(); ch = true; } }));
+    return ch;
+  }
+  function snapshot(){
+    ensureArrays();
+    const m = new Map();
+    Object.keys(ARR).forEach(p=>ARR[p]().forEach(it=>{ if(it && it.id) m.set(p+':'+it.id, it); }));
+    Object.keys(DICT).forEach(p=>{ const o = state[DICT[p]]; Object.keys(o).forEach(k=>m.set(p+':'+k, o[k])); });
+    Object.keys(state).forEach(k=>{
+      if(NOT_TOP.has(k) || state[k]===undefined) return;
+      let v = state[k];
+      if(k==='settings' && v && typeof v==='object'){ v = Object.assign({}, v); delete v.pinHash; delete v.pinLength; }
+      m.set('top:'+k, v);
+    });
+    return m;
+  }
+  function applyRecord(key, d, del){
+    const i = key.indexOf(':'), p = key.slice(0,i), id = key.slice(i+1);
+    ensureArrays();
+    if(ARR[p]){
+      const arr = ARR[p](), idx = arr.findIndex(x=>x && x.id===id);
+      if(del){ if(idx>=0) arr.splice(idx,1); }
+      else if(d && typeof d==='object'){ if(idx>=0) arr[idx] = d; else if(p==='tx') arr.unshift(d); else arr.push(d); }
+    } else if(DICT[p]){
+      if(del) delete state[DICT[p]][id]; else state[DICT[p]][id] = d;
+    } else if(p==='top' && !del && !NOT_TOP.has(id)){
+      if(id==='settings' && d && typeof d==='object'){ const old = state.settings||{}; const n = Object.assign({}, d); if(old.pinHash!==undefined) n.pinHash = old.pinHash; if(old.pinLength!==undefined) n.pinLength = old.pinLength; state.settings = n; }
+      else state[id] = d;
+    }
+  }
+  function blankState(){
+    const s = defaultData();
+    s.transactions = []; s.maintenance = []; s.objectifs = []; s.recurrences = []; s.budgets = {}; s.investProjects = {}; s.revenus = {};
+    s.patrimoine = {actifs:[], passifs:[]};
+    return s;
+  }
+
+  /* ---------- suivi des modifications locales ---------- */
+  function nowT(){ return Math.max(Date.now(), (meta.maxT||0)+1); }
+  function scan(){
+    ensureIds();
+    const snap = snapshot(), t = nowT(); let n = 0;
+    snap.forEach((v,k)=>{
+      const h = hashOf(v), e = meta.rec[k];
+      if(!e){ meta.rec[k] = {h, t, dev:meta.dev, dirty:true, del:false, rev:1}; n++; }
+      else if(e.del || e.h!==h){ e.h = h; e.t = t; e.dev = meta.dev; e.dirty = true; e.del = false; e.rev = (e.rev||0)+1; n++; }
+    });
+    Object.keys(meta.rec).forEach(k=>{ const e = meta.rec[k]; if(!e.del && !snap.has(k)){ e.del = true; e.h = null; e.t = t; e.dev = meta.dev; e.dirty = true; e.rev = (e.rev||0)+1; n++; } });
+    return n;
+  }
+  function remoteWins(p, e){
+    if(!e) return true;
+    if(p.t===e.t && p.dev===e.dev) return false;      // même version : rien à faire
+    return p.t > e.t || (p.t===e.t && p.dev > e.dev);
+  }
+  async function postApply(){
+    normalizeState();
+    applyCategoryMergesAndRenames();
+    ensureTabOrder();
+    await checkAndSyncCategories();
+  }
+  function refreshUI(){
+    try{ populateTxSelects(); }catch(_){ }
+    try{ renderAll(); }catch(e){ console.error(e); }
+  }
+  /* applique une liste d'éléments distants (déjà déchiffrés) ; retourne le nombre d'éléments appliqués */
+  async function applyItems(items){
+    if(!items.length) return 0;
+    scan();                                   // capture d'abord les modifications locales en cours
+    const applied = [];
+    items.forEach(p=>{
+      if(p.t > (meta.maxT||0)) meta.maxT = p.t;
+      const e = meta.rec[p.k];
+      if(!remoteWins(p, e)){ if(e) e.ut = p.ut; return; }
+      applyRecord(p.k, p.d, p.del);
+      meta.rec[p.k] = {h:null, t:p.t, dev:p.dev, dirty:false, del:p.del, rev:(e&&e.rev)||1, ut:p.ut};
+      applied.push(p.k);
+    });
+    if(applied.length){
+      await postApply();
+      const snap = snapshot();
+      applied.forEach(k=>{ const e = meta.rec[k]; if(snap.has(k)) e.h = hashOf(snap.get(k)); else { e.h = null; e.del = true; } });
+      await persist(true);
+      refreshUI();
+    }
+    return applied.length;
+  }
+
+  /* ---------- cycle de synchronisation ---------- */
+  function typing(){ const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type!=='button' && a.type!=='checkbox' && !a.closest('#syncCard'); }
+  async function cycle(){
+    const raw = await pullRaw(meta.lastTs || null, meta.lastId || null);
+    const {items, nbBad} = await decryptAll(raw);
+    bad = nbBad;
+    if(items.length){
+      if(typing() && deferrals < 3){ deferrals++; clearTimeout(debounce); debounce = setTimeout(()=>run('différé'), 4000); return; }   // saisie en cours : on attend (sans rien envoyer)
+      else {
+        deferrals = 0;
+        const n = await applyItems(items);
+        if(n) statusDetail = n+' élément(s) reçu(s)';
+      }
+    }
+    { const c = cursorFrom(raw, meta.lastTs, meta.lastId); meta.lastTs = c.ts; meta.lastId = c.id; }
+    scan();
+    await push();
+    meta.lastOk = Date.now(); await saveMeta();
+  }
+  async function push(){
+    for(;;){
+      scan();
+      const dirty = Object.keys(meta.rec).filter(k=>meta.rec[k].dirty).slice(0, BATCH);
+      if(!dirty.length) return;
+      const snap = snapshot(), jobs = [];
+      dirty.forEach(k=>{ const e = meta.rec[k]; jobs.push({k, t:e.t, dev:e.dev, rev:e.rev||1, json:JSON.stringify({k, t:e.t, dev:e.dev, del:!!e.del, d:e.del?null:snap.get(k)})}); });
+      const writes = [];
+      for(const j of jobs){
+        const id = await docIdOf(j.k), c = await enc(j.json, id);
+        writes.push({update:{name:DOCS+'/users/'+meta.uid+'/records/'+id, fields:{c:{stringValue:c.c}, iv:{stringValue:c.iv}, deleted:{booleanValue:meta.rec[j.k].del===true}, rev:{integerValue:String(j.rev)}, device:{stringValue:meta.dev}}},
+                     updateTransforms:[{fieldPath:'ts', setToServerValue:'REQUEST_TIME'}],
+                     currentDocument: meta.rec[j.k].ut ? {updateTime:meta.rec[j.k].ut} : {exists:false}});
+      }
+      const res = await api(DOCS+':commit', {writes});
+      jobs.forEach((j,i)=>{ const e = meta.rec[j.k]; if(!e) return; if(res && res.writeResults && res.writeResults[i] && res.writeResults[i].updateTime) e.ut = res.writeResults[i].updateTime; if(e.t===j.t) e.dirty = false; });
+      await saveMeta();
+    }
+  }
+  async function run(reason){
+    if(!meta || !meta.enabled || window.__persistBloque) return;
+    if(busy){ rerun = true; return; }
+    busy = true; setStatus('sync');
+    try{
+      if(!keys) await loadKeys();
+      if(!keys){ setStatus('locked'); return; }
+      await cycle();
+      lastErr = ''; conflicts = 0; setStatus(bad ? 'warn' : 'ok');
+    }catch(e){
+      console.warn('sync', e);
+      if(e && /^(FAILED_PRECONDITION|ABORTED|ALREADY_EXISTS)$/.test(e.fs||'') && conflicts++ < 4){ rerun = true; }   // un autre appareil a écrit entre-temps : on relit puis on réessaie
+      else if(e && e.auth){ lastErr = 'Session expirée : reconnectez-vous.'; setStatus('auth'); }
+      else { lastErr = errFR(e); setStatus(e instanceof TypeError ? 'offline' : 'error'); }
+    }finally{
+      busy = false;
+      if(rerun){ rerun = false; clearTimeout(debounce); debounce = setTimeout(()=>run('relance'), 800); }
+    }
+  }
+  function schedule(){
+    if(!meta || !meta.enabled || busy) return;
+    try{ if(scan()) saveMeta(); }catch(e){ console.warn('scan', e); }     // la date de modification est celle de la saisie, pas celle de l'envoi
+    clearTimeout(debounce); debounce = setTimeout(()=>run('modification'), 2500); }
+  async function loadKeys(){
+    try{ keys = await idbGet('keys'); }catch(_){ keys = null; }
+    if(keys && !(keys.aes && keys.mac)) keys = null;
+  }
+
+  /* ---------- interface ---------- */
+  const $ = id => document.getElementById(id);
+  function fmtAgo(t){ if(!t) return 'jamais'; const s = Math.round((Date.now()-t)/1000); if(s<60) return "à l'instant"; if(s<3600) return 'il y a '+Math.round(s/60)+' min'; if(s<86400) return 'il y a '+Math.round(s/3600)+' h'; return 'le '+new Date(t).toLocaleDateString('fr-FR'); }
+  function setStatus(s){ status = s; render(); }
+  function render(){
+    const line = $('syncStatusLine'), badge = $('syncBadge'); if(!line || !badge) return;
+    const on = !!(meta && meta.enabled);
+    $('syncFormOut').style.display = (!on || status==='auth' || status==='locked') ? '' : 'none';
+    $('syncFormIn').style.display = on ? '' : 'none';
+    if(on && !$('syncEmail').value) $('syncEmail').value = meta.email || '';
+    $('syncPassWrap').style.display = (status==='locked') ? 'none' : '';
+    $('syncConnectBtn').textContent = status==='locked' ? 'Déverrouiller' : (on ? 'Se reconnecter' : 'Connecter cet appareil');
+    const map = {
+      off:['☁️ Non connecté','',''],
+      sync:['⟳ Synchronisation en cours…','⟳','var(--ink-soft)'],
+      ok:['✅ Synchronisé '+fmtAgo(meta&&meta.lastOk)+(statusDetail?' · '+statusDetail:''),'☁️✓','var(--green,#1b7f4b)'],
+      warn:['⚠️ Synchronisé, mais '+bad+' élément(s) illisible(s) (phrase secrète différente ?)','☁️!','#b26a00'],
+      offline:['📴 Hors connexion : vos saisies sont gardées et partiront au retour du réseau.','☁️⏸','#b26a00'],
+      error:['❌ '+lastErr,'☁️✗','#a32020'],
+      auth:['🔑 '+(lastErr||'Reconnexion nécessaire'),'☁️🔑','#a32020'],
+      locked:['🔒 Saisissez votre phrase secrète pour déverrouiller la synchronisation sur cet appareil.','☁️🔒','#b26a00']
+    };
+    const m = map[on ? status : 'off'] || map.off;
+    line.textContent = m[0]; line.style.color = m[2] || '';
+    badge.textContent = on ? m[1] : ''; badge.title = m[0]; badge.style.display = on ? '' : 'none';
+    $('syncNowBtn').disabled = status==='sync';
+  }
+  function askChoice(title, text, labels){
+    return new Promise(res=>{
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+      const bx = document.createElement('div');
+      bx.style.cssText = 'background:var(--surface,#fff);color:var(--ink,#111);max-width:460px;width:100%;border-radius:12px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.4)';
+      const h = document.createElement('div'); h.style.cssText = 'font-weight:700;font-size:16px;margin-bottom:8px'; h.textContent = title;
+      const p = document.createElement('div'); p.style.cssText = 'font-size:13.5px;line-height:1.45;margin-bottom:14px;white-space:pre-line'; p.textContent = text;
+      bx.append(h, p);
+      labels.forEach((l,i)=>{ const b = document.createElement('button'); b.className = 'btn' + (i===labels.length-1 ? ' secondary' : ''); b.style.cssText = 'display:block;width:100%;margin:6px 0'; b.textContent = l; b.addEventListener('click', ()=>{ ov.remove(); res(i); }); bx.appendChild(b); });
+      ov.appendChild(bx); document.body.appendChild(ov);
+    });
+  }
+  function formError(msg){ const l = $('syncStatusLine'); l.textContent = '❌ '+msg; l.style.color = '#a32020'; }
+
+  /* ---------- connexion / adoption ---------- */
+  async function connect(){
+    const email = $('syncEmail').value.trim(), pw = $('syncPass').value, phrase = $('syncPhrase').value, phrase2 = $('syncPhrase2').value;
+    const relock = (status==='locked');
+    if(window.__persistBloque){ formError("Le stockage de cet appareil est inaccessible : synchronisation impossible."); return; }
+    if(relock){
+      if(!phrase){ formError('Saisissez la phrase secrète.'); return; }
+      $('syncConnectBtn').disabled = true;
+      try{
+        const k = await deriveKeys(phrase, meta.salt); keys = k;
+        if(!(await checkVerifier(meta.verifier))){ keys = null; throw new Error('Phrase secrète incorrecte.'); }
+        try{ await idbSet('keys', k); }catch(_){ }
+        $('syncPhrase').value = ''; setStatus('sync'); run('déverrouillage');
+      }catch(e){ formError(errFR(e)); }
+      $('syncConnectBtn').disabled = false; return;
+    }
+    if(!/^\S+@\S+\.\S+$/.test(email)){ formError("Saisissez l'e-mail du compte Firebase."); return; }
+    if(!pw){ formError('Saisissez le mot de passe du compte.'); return; }
+    if(phrase.length < 8){ formError('La phrase secrète doit contenir au moins 8 caractères.'); return; }
+    if(phrase===pw){ formError('La phrase secrète doit être DIFFÉRENTE du mot de passe du compte.'); return; }
+    $('syncConnectBtn').disabled = true; setStatus('sync'); $('syncStatusLine').textContent = '⟳ Connexion…';
+    let created = null;
+    try{
+      const a = await signIn(email, pw);
+      const uid = a.localId;
+      const prev = (meta && meta.uid===uid) ? meta : null;
+      meta = prev || {v:1, uid, email, dev:hex(rnd(5)), rec:{}, lastTs:null, maxT:0, enabled:false};
+      meta.uid = uid; meta.email = email; meta.rt = a.refreshToken; setToken(a.idToken, a.expiresIn);
+      const cm = await getMetaDoc(uid);
+      let salt, verifier;
+      if(!cm){
+        if(phrase!==phrase2){
+          $('syncPhrase2Wrap').style.display = '';
+          throw new Error("Première connexion : saisissez la même phrase secrète dans les deux champs (elle ne pourra pas être récupérée si vous l'oubliez).");
+        }
+        salt = b64e(rnd(16)); keys = await deriveKeys(phrase, salt); verifier = await makeVerifier();
+        await createMetaDoc(uid, salt, verifier); created = true;
+      } else {
+        salt = cm.salt; verifier = cm.verifier; keys = await deriveKeys(phrase, salt);
+        if(!(await checkVerifier(verifier))){ keys = null; throw new Error('Phrase secrète incorrecte.'); }
+      }
+      meta.salt = salt; meta.verifier = verifier;
+      try{ await idbSet('keys', keys); }catch(_){ }
+      if(prev && prev.enabled){            // simple reconnexion du même appareil
+        meta.enabled = true; await saveMeta(); $('syncPass').value = ''; $('syncPhrase').value = ''; $('syncPhrase2').value = '';
+        setStatus('sync'); run('reconnexion'); return;
+      }
+      const ok = await adopt();
+      if(!ok){ await disconnect(true); formError('Connexion annulée. Rien n\'a été modifié.'); return; }
+      meta.enabled = true; await saveMeta();
+      $('syncPass').value = ''; $('syncPhrase').value = ''; $('syncPhrase2').value = ''; $('syncPhrase2Wrap').style.display = 'none';
+      statusDetail = ''; setStatus('sync'); await run('première synchronisation');
+      startPolling();
+    }catch(e){
+      console.warn('connect', e);
+      keys = null; idToken = null;
+      if(meta && !meta.enabled){ meta = null; }
+      formError(errFR(e)); status = meta && meta.enabled ? 'auth' : 'off';
+    }finally{ $('syncConnectBtn').disabled = false; }
+  }
+  /* Premier rattachement de cet appareil : choisir le sens (cloud -> appareil, ou appareil -> cloud). Retourne false si annulé. */
+  async function adopt(){
+    const probe = await pullRaw(null, null, 1);
+    const cloudHas = probe.length > 0;
+    const nLocal = (state.transactions||[]).length + Object.keys(state.revenus||{}).length;
+    if(!cloudHas){
+      meta.rec = {}; meta.lastTs = null; meta.lastId = null; return true;          // le premier cycle enverra tout
+    }
+    let choix = 0;
+    if(nLocal>0){
+      choix = await askChoice('Des données existent déjà',
+        "Le cloud contient déjà des données ET cet appareil aussi.\n\n• « Reprendre le cloud » : cet appareil est remplacé par les données du cloud (une copie de sécurité locale est gardée).\n• « Envoyer cet appareil » : le cloud est remplacé par les données de cet appareil.",
+        ['Reprendre les données du cloud', 'Envoyer les données de cet appareil', 'Annuler']);
+      if(choix===2) return false;
+    }
+    const raw = await pullRaw(null, null);
+    const {items, nbBad} = await decryptAll(raw);
+    if(nbBad && !items.length) throw new Error('Phrase secrète incorrecte (aucun élément lisible).');
+    meta.rec = {}; meta.maxT = 0;
+    items.forEach(p=>{ if(p.t>meta.maxT) meta.maxT = p.t; });
+    { const c = cursorFrom(raw, null, null); meta.lastTs = c.ts; meta.lastId = c.id; }
+    if(choix===0){
+      try{ await window.storage.set('finances-data-avant-sync-'+Date.now(), JSON.stringify(state)); }catch(_){ }
+      const keep = {pinHash:state.settings&&state.settings.pinHash, pinLength:state.settings&&state.settings.pinLength, tabOrder:state.tabOrder};
+      state = blankState();
+      items.forEach(p=>{ if(!p.del) applyRecord(p.k, p.d, false); });
+      if(keep.pinHash!==undefined){ state.settings.pinHash = keep.pinHash; state.settings.pinLength = keep.pinLength; }
+      state.tabOrder = keep.tabOrder || null;
+      state.transactions.sort((a,b)=>String(b.date).localeCompare(String(a.date)));     // plus récentes d'abord, comme dans l'application
+      await postApply(); await persist(true);
+      try{ const y = state.transactions.length ? parseInt(String(state.transactions[0].date).slice(0,4)) : new Date().getFullYear(); if(y) document.getElementById('filterYear').value = y; document.getElementById('filterMonth').value = 'all'; }catch(_){ }
+      refreshUI();
+      const snap = snapshot();
+      items.forEach(p=>{ meta.rec[p.k] = {h:snap.has(p.k)?hashOf(snap.get(p.k)):null, t:p.t, dev:p.dev, dirty:false, del:p.del||!snap.has(p.k), rev:1, ut:p.ut}; });
+    } else {                                                    // l'appareil gagne : le reste du cloud est marqué supprimé
+      const t = Date.now() + 1;
+      items.forEach(p=>{ meta.rec[p.k] = {h:null, t:Math.max(t,p.t+1), dev:meta.dev, dirty:true, del:true, rev:1, ut:p.ut}; });
+    }
+    return true;
+  }
+  async function disconnect(silent){
+    clearInterval(poller); poller = null; clearTimeout(debounce);
+    if(meta){ meta.enabled = false; }
+    meta = null; keys = null; idToken = null; idExp = 0; lastErr = ''; statusDetail = '';
+    try{ await window.storage.delete(META_KEY); }catch(_){ }
+    await idbDel('keys');
+    status = 'off'; render();
+    if(!silent) showToast('Cet appareil est déconnecté. Ses données locales sont conservées.');
+  }
+  function startPolling(){
+    clearInterval(poller);
+    poller = setInterval(()=>{ if(!document.hidden && navigator.onLine!==false) run('sondage'); }, 90000);
+  }
+
+  /* ---------- initialisation ---------- */
+  async function init(){
+    const btn = $('syncConnectBtn'); if(!btn) return;
+    btn.addEventListener('click', connect);
+    $('syncNowBtn').addEventListener('click', ()=>{ statusDetail = ''; run('manuel'); });
+    $('syncOffBtn').addEventListener('click', async ()=>{ if(confirm("Déconnecter cet appareil de la synchronisation ?\n\nSes données locales sont conservées. Le cloud n'est pas modifié.")) await disconnect(); });
+    $('syncShowPhrase').addEventListener('change', e=>{ ['syncPass','syncPhrase','syncPhrase2'].forEach(id=>{ $(id).type = e.target.checked ? 'text' : 'password'; }); });
+    window.addEventListener('online', ()=>run('réseau'));
+    window.addEventListener('offline', ()=>{ if(meta&&meta.enabled) setStatus('offline'); });
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) run('retour'); });
+    window.addEventListener('pagehide', ()=>{ if(meta) saveMeta(); });
+    setInterval(()=>{ if(meta && meta.enabled && status==='ok') render(); }, 30000);
+    await loadMeta();
+    if(meta && meta.enabled && !window.__persistBloque){
+      await loadKeys();
+      status = keys ? 'sync' : 'locked'; render();
+      if(keys){ startPolling(); run('démarrage'); }
+    } else { meta = null; render(); }
+    window.__syncHook = schedule;
+  }
+  return {init, run, connect, disconnect, snapshot, scan, hashOf, canon, get meta(){ return meta; }, get status(){ return status; }, get busy(){ return busy; }};
+})();
+
 (async function init(){
   await loadState();
   if(state.settings && state.settings.pinHash){
@@ -3067,6 +3590,7 @@ function handleLaunchParams(){
   document.getElementById('txDate').value = localISO();
   renderAll();
   handleLaunchParams();
+  SYNC.init().catch(e=>console.error('sync init', e));
   if(nbGenerees>0){ showToast(`🔁 ${nbGenerees} dépense${nbGenerees>1?'s':''} récurrente${nbGenerees>1?'s':''} généré${nbGenerees>1?'es':'e'} automatiquement dans Transactions.`); }
 })();
 
