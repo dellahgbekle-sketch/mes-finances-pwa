@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="mf-build" content="30002">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IgZnLkI2ThVqRZwWeUUKuj45ELJvrTHoSmT94RfTVMg='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta name="mf-build" content="30003">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3QQVNDEuE9OElv3sB8KaaaS6rEGZJXzI1c4X5Gt7avA='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <style>
 :root{
@@ -221,6 +221,7 @@ input[type=number]{font-family:var(--mono);}
     </select>
     <span class="save-msg" id="saveMsg">✓ enregistré</span>
     <span id="syncBadge" style="display:none;font-size:12px;font-weight:700;cursor:default"></span>
+    <span style="margin-left:auto;display:flex;gap:6px"><button class="btn secondary small" id="lockNowBtn" title="Verrouiller avec le code PIN">🔒 Verrouiller</button><button class="btn secondary small" id="quitBtn" title="Fermer l'application" style="display:none">⏻ Quitter</button></span>
   </div>
 
   <!-- DASHBOARD -->
@@ -926,7 +927,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v30-alpha2 · 2 nov. 2026';
+const APP_VERSION = 'v30-alpha3 · 3 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -3577,6 +3578,37 @@ const SYNC = (function(){
     window.__syncHook = schedule;
   }
   return {init, run, connect, disconnect, snapshot, scan, hashOf, canon, get meta(){ return meta; }, get status(){ return status; }, get busy(){ return busy; }};
+})();
+
+/* ======================= VERROUILLER / QUITTER ======================= */
+(function(){
+  const lockBtn = document.getElementById('lockNowBtn'), quitBtn = document.getElementById('quitBtn');
+  if(!lockBtn || !quitBtn) return;
+  lockBtn.addEventListener('click', async ()=>{
+    if(!(state.settings && state.settings.pinHash)){ showToast('Aucun code PIN défini : créez-en un dans Paramètres > Sécurité pour pouvoir verrouiller.', 5500); return; }
+    if(document.getElementById('lockScreen').classList.contains('active')) return;
+    await requireUnlock();
+  });
+  // « Quitter » n'a de sens que dans l'application Windows (fenêtre dédiée, adresse locale) ; sur téléphone ou navigateur on ferme comme d'habitude.
+  if(location.hostname === '127.0.0.1' && location.port === '47329') quitBtn.style.display = '';
+  quitBtn.addEventListener('click', async ()=>{
+    if(!confirm('Quitter Mes Finances ?')) return;
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:20000;background:var(--primary-dark,#1c3d33);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;text-align:center;padding:24px';
+    ov.textContent = '⏻ Fermeture en cours…'; document.body.appendChild(ov);
+    try{
+      await persist(true);
+      if(typeof SYNC!=='undefined' && SYNC.meta && SYNC.meta.enabled && navigator.onLine!==false){
+        ov.textContent = '☁️ Synchronisation avant fermeture…';
+        const limit = Date.now() + 6000;
+        await Promise.race([SYNC.run('fermeture'), new Promise(r=>setTimeout(r,6000))]);
+        while(SYNC.busy && Date.now() < limit) await new Promise(r=>setTimeout(r,100));
+      }
+    }catch(e){ console.warn('fermeture', e); }
+    ov.textContent = '⏻ Fermeture en cours…';
+    window.close();
+    setTimeout(()=>{ ov.textContent = '✅ Application fermée. Vous pouvez fermer cette fenêtre.'; }, 600);
+  });
 })();
 
 (async function init(){
