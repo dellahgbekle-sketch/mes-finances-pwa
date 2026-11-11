@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
-<meta name="mf-build" content="34000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-Pip2CIzSWbWxU69LhrnIEgJMc0cTBmYge8culRanH3k='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="mf-build" content="35000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-39d98mIJ+IIiYheGvO7H4H6Uy/G8R5O6jf4/3ikPIdg='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script>/*!
  * Chart.js v4.4.0
  * https://www.chartjs.org
@@ -461,6 +461,19 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   #revenusTable tfoot td:first-child{background:var(--bg)}
   #revenusTable th{white-space:nowrap}
   #revenusTable input{min-height:48px}
+}
+
+/* ===================== v35 : Quitter partout, sections repliables, Annuler après suppression (P4a) ===================== */
+.toast-undo{position:fixed;bottom:var(--toast-bottom,20px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--toast-bg);color:var(--toast-ink);padding:8px 10px 8px 18px;border-radius:10px;font-size:14px;z-index:10001;box-shadow:var(--shadow);max-width:calc(100vw - 24px);box-sizing:border-box}
+.toast-undo button{min-height:40px;padding:0 14px;border:none;border-radius:8px;background:var(--surface);color:var(--primary);font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap}
+.fold-h{position:relative}
+@media(max-width:700px){
+  .fold-h{cursor:pointer;padding-right:34px;user-select:none;margin-top:14px}
+  .fold-h::after{content:"";position:absolute;right:10px;top:50%;width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+  .fold-h.open::after{transform:translateY(-30%) rotate(-135deg)}
+  .fold-b{display:none}
+  .fold-h.open+.fold-b,.fold-b.open{display:block}
+  .fold-h:not(.open){border-bottom-color:transparent;margin-bottom:0}
 }
 </style>
 
@@ -1228,7 +1241,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v34 · 11 nov. 2026';
+const APP_VERSION = 'v35 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -2233,7 +2246,7 @@ function renderTransactions(){
     </tr>`).join('');
   body.querySelectorAll('button.danger').forEach(b=>b.addEventListener('click', async ()=>{
     if(editingTxId===b.dataset.id) cancelTxEdit();
-    state.transactions = state.transactions.filter(t=>t.id!==b.dataset.id);
+    removeWithUndo(state.transactions, b.dataset.id, 'Transaction', renderAll);
     await persist(); renderAll();
   }));
   body.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>startTxEdit(b.dataset.edit)));
@@ -2865,7 +2878,7 @@ function renderMaintenance(){
   });
   document.getElementById('maintBody').querySelectorAll('[data-maint-del]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      state.maintenance = state.maintenance.filter(m=>m.id!==btn.dataset.maintDel);
+      removeWithUndo(state.maintenance, btn.dataset.maintDel, 'Entretien', renderAll);
       await persist(); renderMaintenance();
     });
   });
@@ -2967,7 +2980,7 @@ function renderObjectifs(){
   });
   document.getElementById('objBody').querySelectorAll('[data-obj-del]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      state.objectifs = state.objectifs.filter(o=>o.id!==btn.dataset.objDel);
+      removeWithUndo(state.objectifs, btn.dataset.objDel, 'Objectif', renderAll);
       await persist(); renderObjectifs();
     });
   });
@@ -3046,11 +3059,11 @@ function renderPatrimoine(){
   `;
 
   actifsBody.querySelectorAll('[data-actif-del]').forEach(btn=>btn.addEventListener('click', async ()=>{
-    state.patrimoine.actifs = state.patrimoine.actifs.filter(a=>a.id!==btn.dataset.actifDel);
+    removeWithUndo(state.patrimoine.actifs, btn.dataset.actifDel, 'Actif', renderAll);
     await persist(); renderPatrimoine();
   }));
   passifsBody.querySelectorAll('[data-passif-del]').forEach(btn=>btn.addEventListener('click', async ()=>{
-    state.patrimoine.passifs = state.patrimoine.passifs.filter(p=>p.id!==btn.dataset.passifDel);
+    removeWithUndo(state.patrimoine.passifs, btn.dataset.passifDel, 'Passif', renderAll);
     await persist(); renderPatrimoine();
   }));
 }
@@ -3442,6 +3455,21 @@ function renderAll(){
 }
 
 /* ======================= INIT ======================= */
+function showUndoToast(msg, onUndo, ms=6000){
+  document.querySelectorAll('.toast-undo').forEach(t=>t.remove());
+  const t = document.createElement('div'); t.className = 'toast-undo'; t.setAttribute('role','status');
+  const s = document.createElement('span'); s.textContent = msg;
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Annuler';
+  t.appendChild(s); t.appendChild(b); document.body.appendChild(t);
+  const timer = setTimeout(()=>t.remove(), ms);
+  b.addEventListener('click', async ()=>{ clearTimeout(timer); t.remove(); try{ await onUndo(); showToast('Suppression annulée.'); }catch(e){ console.warn('annulation', e); } });
+}
+function removeWithUndo(arr, id, label, rerender){
+  const idx = arr.findIndex(x=>x.id===id); if(idx<0) return null;
+  const item = arr[idx]; arr.splice(idx,1);
+  showUndoToast(label+' supprimé(e).', async ()=>{ arr.splice(Math.min(idx, arr.length), 0, item); await persist(); rerender(); });
+  return item;
+}
 function showToast(msg, ms=3500){
   const t = document.createElement('div');
   t.textContent = msg;
@@ -3980,8 +4008,9 @@ const SYNC = (function(){
     if(document.getElementById('lockScreen').classList.contains('active')) return;
     await requireUnlock();
   });
-  // « Quitter » n'a de sens que dans l'application Windows (fenêtre dédiée, adresse locale) ; sur téléphone ou navigateur on ferme comme d'habitude.
-  if(location.hostname === '127.0.0.1' && location.port === '47329') quitBtn.style.display = '';
+  // Application Windows (adresse locale) : la fenêtre se ferme vraiment. Téléphone / navigateur : enregistrement + synchronisation, puis verrouillage (si PIN) et écran de fin.
+  const isLauncher = (location.hostname === '127.0.0.1' && location.port === '47329');
+  quitBtn.style.display = '';
   quitBtn.addEventListener('click', async ()=>{
     if(!confirm('Quitter Mes Finances ?')) return;
     const ov = document.createElement('div');
@@ -3997,13 +4026,27 @@ const SYNC = (function(){
       }
     }catch(e){ console.warn('fermeture', e); }
     ov.textContent = '⏻ Fermeture en cours…';
-    window.close();
-    setTimeout(()=>{ ov.textContent = '✅ Application fermée. Vous pouvez fermer cette fenêtre.'; }, 600);
+    if(isLauncher){ window.close(); setTimeout(()=>{ ov.textContent = '✅ Application fermée. Vous pouvez fermer cette fenêtre.'; }, 600); return; }
+    const hasPin = !!(state.settings && state.settings.pinHash);
+    ov.innerHTML = '<div><div style="font-size:40px;margin-bottom:12px">✅</div><div>Données enregistrées' + ((typeof SYNC!=='undefined' && SYNC.meta && SYNC.meta.enabled) ? ' et synchronisées' : '') + '.</div><div style="font-size:14px;opacity:.85;margin-top:10px">Vous pouvez fermer l\'application depuis les applications récentes.' + (hasPin ? ' Elle est verrouillée.' : '') + '</div><button type="button" id="quitBack" class="btn" style="margin-top:22px;background:#fff;color:var(--primary-dark,#1c3d33);min-height:48px;padding:0 22px">Revenir à l\'application</button></div>';
+    document.getElementById('quitBack').addEventListener('click', async ()=>{ ov.remove(); if(hasPin) await requireUnlock(); });
+    try{ window.close(); }catch(e){}
   });
 })();
 
+function initFolds(){
+  const tog = h=>{ const o = h.classList.toggle('open'); h.setAttribute('aria-expanded', o?'true':'false'); let n = h.nextElementSibling; while(n && n.classList.contains('fold-b')){ n.classList.toggle('open', o); n = n.nextElementSibling; } };
+  const arm = (h, bodies)=>{ h.classList.add('fold-h'); h.setAttribute('role','button'); h.setAttribute('tabindex','0'); h.setAttribute('aria-expanded','false'); bodies.forEach(b=>b.classList.add('fold-b')); h.addEventListener('click', ()=>tog(h)); h.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(h); } }); };
+  // Paramètres : « titre » puis « carte » frères directs
+  const p = document.getElementById('panel-parametres');
+  if(p) [...p.children].forEach(el=>{ if(el.classList.contains('section-title') && el.nextElementSibling && el.nextElementSibling.classList.contains('card')) arm(el, [el.nextElementSibling]); });
+  // Guide (et 1re carte de Paramètres) : titre à l'intérieur de la carte, le reste de la carte se replie
+  const scope = [document.getElementById('panel-guide'), p].filter(Boolean);
+  scope.forEach(sec=>sec.querySelectorAll('.card').forEach(c=>{ const h = c.firstElementChild; if(h && h.classList.contains('section-title') && !h.classList.contains('fold-h') && c.children.length>1) arm(h, [...c.children].slice(1)); }));
+}
 (async function init(){
   await loadState();
+  try{ initFolds(); }catch(e){ console.warn('folds', e); }
   applyTheme();
   if(state.settings && state.settings.pinHash){
     await requireUnlock();
