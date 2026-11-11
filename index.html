@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="mf-build" content="37000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-Yqtaek0CiHNyG5MPN1XX9rHtSCdOzrkyXPlyam61PQI='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta name="mf-build" content="38000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-cCEL3RulFwHkKaVYouNGPyOtrIStdUsE1dA1OPJ5ktI='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <script>(function(){var d=document.documentElement;try{var p=localStorage.getItem('mf-theme')||'sahara';var ok={sahara:1,emeraude:1,nuit:1,ocean:1,violet:1};var t=p==='auto'?((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'nuit':'sahara'):(ok[p]?p:'sahara');d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','sahara');}})();</script>
 <style>
@@ -570,6 +570,56 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   table.cards-maint td:nth-child(12):empty,table.cards-maint td:nth-child(11):empty{display:none}
   table.cards-maint td:nth-child(13){grid-area:act;display:flex;gap:8px;justify-content:flex-end;margin-top:4px;white-space:normal!important}
 }
+
+/* ===================== v38 : Investissements, Patrimoine, Avalanche en cartes ; colonne figée Crédit / Projection / Annuel ===================== */
+@media(max-width:700px){
+  /* --- Investissements : Désignation, Priorité, Budget prévu, Réalisé, Écart, Statut, Payé ?, Urgent ? --- */
+  table.cards-inv tr{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"nom nom statut" "prio budget budget" "real ecart ecart" "paye urgent urgent"}
+  table.cards-inv td:nth-child(1){grid-area:nom;font-weight:700;font-size:15px}
+  table.cards-inv td:nth-child(2){grid-area:prio}
+  table.cards-inv td:nth-child(2)::before{content:"Priorité"}
+  table.cards-inv td:nth-child(2) select{width:100%;min-height:48px}
+  table.cards-inv td:nth-child(3){grid-area:budget}
+  table.cards-inv td:nth-child(3)::before{content:"Budget prévu"}
+  table.cards-inv td:nth-child(3) input{width:100%!important}
+  table.cards-inv td:nth-child(4){grid-area:real;font-family:var(--mono)}
+  table.cards-inv td:nth-child(4)::before{content:"Réalisé"}
+  table.cards-inv td:nth-child(5){grid-area:ecart;font-family:var(--mono)}
+  table.cards-inv td:nth-child(5)::before{content:"Écart";color:var(--ink-soft)}
+  table.cards-inv td:nth-child(6){grid-area:statut;text-align:right;font-size:12px;white-space:nowrap}
+  table.cards-inv td:nth-child(7),table.cards-inv td:nth-child(8){display:flex;align-items:center;gap:8px;text-align:left!important;font-size:13px;min-height:44px}
+  table.cards-inv td:nth-child(7){grid-area:paye}
+  table.cards-inv td:nth-child(8){grid-area:urgent}
+  table.cards-inv td:nth-child(7)::before{content:"Payé";margin:0}
+  table.cards-inv td:nth-child(8)::before{content:"Urgent";margin:0}
+  table.cards-inv td:nth-child(7) input,table.cards-inv td:nth-child(8) input{margin:0!important;order:-1}
+  /* --- Patrimoine : Actif/Passif, Catégorie, Valeur/Montant, Suppr --- */
+  table.cards-pat tr{grid-template-columns:1fr auto;grid-template-areas:"nom val" "cat act"}
+  table.cards-pat td:nth-child(1){grid-area:nom;font-weight:700;font-size:15px}
+  table.cards-pat td:nth-child(2){grid-area:cat;font-size:12px;color:var(--ink-soft);align-self:center}
+  table.cards-pat td:nth-child(3){grid-area:val;font-family:var(--mono);font-weight:700;font-size:16px;white-space:nowrap;text-align:right}
+  table.cards-pat td:nth-child(4){grid-area:act;text-align:right}
+  table.cards-pat tfoot tr{grid-template-columns:1fr auto;grid-template-areas:none}
+  table.cards-pat tfoot td{font-family:var(--mono);white-space:nowrap}
+  /* --- Avalanche : Priorité, Crédit, Taux, Capital restant, Mensualité min. --- */
+  table.cards-aval tr{grid-template-columns:auto 1fr;grid-template-areas:"prio nom" "taux cap" "mens mens"}
+  table.cards-aval td:nth-child(1){grid-area:prio;font-weight:700;font-size:18px;font-family:var(--mono);align-self:center;padding-right:6px}
+  table.cards-aval td:nth-child(2){grid-area:nom;font-weight:700;font-size:15px;align-self:center}
+  table.cards-aval td:nth-child(3){grid-area:taux;font-family:var(--mono)}
+  table.cards-aval td:nth-child(3)::before{content:"Taux annuel"}
+  table.cards-aval td:nth-child(4){grid-area:cap;font-family:var(--mono)}
+  table.cards-aval td:nth-child(4)::before{content:"Capital restant"}
+  table.cards-aval td:nth-child(5){grid-area:mens;font-family:var(--mono)}
+  table.cards-aval td:nth-child(5)::before{content:"Mensualité min."}
+  /* --- Colonne figée : amortissement, projection, suivi annuel --- */
+  table.sticky-first th:first-child,table.sticky-first td:first-child{position:sticky;left:0;z-index:2;background:var(--surface);box-shadow:4px 0 6px -3px rgba(0,0,0,.18);min-width:64px;font-weight:600;white-space:nowrap}
+  table.sticky-first thead th:first-child,table.sticky-first tfoot td:first-child{background:var(--bg)}
+  table.sticky-first tr[style*="background"] td:first-child{background:var(--bg)}
+  table.sticky-first th{white-space:nowrap}
+  .fold-h{min-height:44px;display:flex;align-items:center}
+  /* --- Récapitulatif Patrimoine (4 colonnes) : tient dans l'écran --- */
+  #panel-patrimoine .tbl-wrap:not(:has(table.cards)) td,#panel-patrimoine .tbl-wrap:not(:has(table.cards)) th{padding-left:5px;padding-right:5px;font-size:12px}
+}
 </style>
 
 </head>
@@ -956,7 +1006,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
 
     <div class="section-title">Tableau d'amortissement</div>
     <div class="tbl-wrap scroll-y">
-      <table>
+      <table class="sticky-first">
         <thead><tr><th>Mois #</th><th>Date</th><th class="num">Capital dû (début)</th><th class="num">Mensualité</th><th class="num">Intérêts</th><th class="num">Capital remboursé</th><th class="num">Capital dû (fin)</th></tr></thead>
         <tbody id="crAmort"></tbody>
       </table>
@@ -980,7 +1030,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     <p class="small-note">Priorise le remboursement des crédits par taux d'intérêt décroissant : tout effort supplémentaire est dirigé vers le crédit le plus coûteux, ce qui minimise le total des intérêts payés. Combine automatiquement le Crédit bancaire et les Multi-Crédits actifs.</p>
     <div class="card">
       <div class="tbl-wrap">
-        <table>
+        <table class="cards cards-aval">
           <thead><tr><th>Priorité</th><th>Crédit</th><th class="num">Taux annuel</th><th class="num">Capital restant</th><th class="num">Mensualité min.</th></tr></thead>
           <tbody id="avalancheOrderBody"></tbody>
         </table>
@@ -1094,7 +1144,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
           <div class="full"><label>Valeur actuelle (<span class="cur-label">FCFA</span>)</label><input type="number" id="actifValeur" required></div>
           <div class="full"><button type="submit" class="btn small">+ Ajouter</button></div>
         </form>
-        <div class="tbl-wrap"><table>
+        <div class="tbl-wrap"><table class="cards cards-pat">
           <thead><tr><th>Actif</th><th>Catégorie</th><th class="num">Valeur</th><th></th></tr></thead>
           <tbody id="actifsBody"></tbody>
           <tfoot id="actifsFoot"></tfoot>
@@ -1112,7 +1162,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
           <div class="full"><label>Montant restant dû (<span class="cur-label">FCFA</span>)</label><input type="number" id="passifValeur" required></div>
           <div class="full"><button type="submit" class="btn small">+ Ajouter</button></div>
         </form>
-        <div class="tbl-wrap"><table>
+        <div class="tbl-wrap"><table class="cards cards-pat">
           <thead><tr><th>Passif</th><th>Catégorie</th><th class="num">Montant</th><th></th></tr></thead>
           <tbody id="passifsBody"></tbody>
           <tfoot id="passifsFoot"></tfoot>
@@ -1146,7 +1196,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
       <p class="small-note">Le crédit mensuel (tous crédits) est repris automatiquement des onglets Crédit bancaire + Multi-Crédits.</p>
     </div>
     <div class="tbl-wrap scroll-y">
-      <table>
+      <table class="sticky-first">
         <thead><tr><th>Mois</th><th>Date</th><th class="num">Revenu prévu</th><th class="num">Besoins</th><th class="num">Épargne</th><th class="num">Désirs</th><th class="num">Invest.</th><th class="num">Crédit</th><th class="num">Total charges</th><th class="num">Solde mensuel</th><th class="num">Cumul épargne</th><th class="num">Patrimoine net proj.</th><th>Statut</th></tr></thead>
         <tbody id="projBody"></tbody>
       </table>
@@ -1157,7 +1207,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   <section class="panel" id="panel-annuel">
     <p class="small-note">Toutes les valeurs sont calculées automatiquement depuis vos transactions et revenus, pour l'année sélectionnée en haut de page.</p>
     <div class="tbl-wrap">
-      <table id="annuelTable">
+      <table id="annuelTable" class="sticky-first">
         <thead><tr>
           <th>Catégorie</th><th class="num">Jan</th><th class="num">Fév</th><th class="num">Mar</th><th class="num">Avr</th><th class="num">Mai</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Aoû</th><th class="num">Sep</th><th class="num">Oct</th><th class="num">Nov</th><th class="num">Déc</th><th class="num">Total</th>
         </tr></thead>
@@ -1377,7 +1427,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v37 · 11 nov. 2026';
+const APP_VERSION = 'v38 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -3420,7 +3470,7 @@ function renderInvestissements(){
     }).join('');
     const groupStatut = totalBudget>0 ? (totalReal<=totalBudget?'✅ Budget respecté':'🔴 Dépassement') : '—';
     return `<div class="section-title">${group.label} — Budget ${fmt(totalBudget)} · Réalisé ${fmt(totalReal)} · ${groupStatut}</div>
-      <div class="tbl-wrap"><table>
+      <div class="tbl-wrap"><table class="cards cards-inv">
         <thead><tr><th>Désignation</th><th>Priorité</th><th class="num">Budget prévu</th><th class="num">Réalisé</th><th class="num">Écart</th><th>Statut</th><th>Payé ?</th><th>Urgent ?</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
