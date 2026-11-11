@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
-<meta name="mf-build" content="36000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-xQ78OlyN14Lh3iMjK5yc8ae80i7QtmBCk8t/kKYiE04='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="mf-build" content="37000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-PDCemBk2ckmbF1zjw/lRVx9jT6C4UCMuMjSlt2P6OL4='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script>/*!
  * Chart.js v4.4.0
  * https://www.chartjs.org
@@ -507,6 +507,79 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
 .obj-ring svg{width:72px;height:72px}
 .obj-ring .n{font-size:12.5px;font-weight:700;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .obj-ring .r{font-size:12px;color:var(--ink-soft);font-family:var(--mono)}
+
+/* ===================== v37 : Objectifs, Récurrences, Maintenance en cartes (mobile) ===================== */
+@media(max-width:700px){
+  table.cards td::before{display:block;font-family:var(--sans);margin-bottom:2px}
+  table.cards td.num{text-align:left}
+  table.cards td input{box-sizing:border-box}
+  table.cards tfoot{display:block}
+  table.cards tfoot tr{background:var(--bg)}
+  table.cards tfoot td:empty{display:none}
+  table.cards tfoot td[colspan]{font-family:var(--sans);font-size:14px;grid-column:1/-1}
+  table.cards tfoot td{grid-area:auto!important}
+  /* --- Objectifs : #, Objectif, Catégorie, Cible, Épargné, Reste, % Atteint, Jauge, Date cible, Dépôt/mois, Statut, Priorité, Suppr --- */
+  table.cards-obj tr{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"nom nom statut" "cat cat prio" "cible ep reste" "pct date depot" "act act act"}
+  table.cards-obj tbody td:nth-child(1),table.cards-obj tbody td:nth-child(8){display:none}
+  table.cards-obj td:nth-child(2){grid-area:nom;font-weight:700;font-size:15px}
+  table.cards-obj td:nth-child(3){grid-area:cat;font-size:12px;color:var(--ink-soft)}
+  table.cards-obj td:nth-child(4){grid-area:cible;font-family:var(--mono)}
+  table.cards-obj td:nth-child(4)::before{content:"Cible"}
+  table.cards-obj td:nth-child(5){grid-area:ep;font-family:var(--mono)}
+  table.cards-obj td:nth-child(5)::before{content:"Épargné"}
+  table.cards-obj td:nth-child(5) input{width:100%!important}
+  table.cards-obj td:nth-child(6){grid-area:reste;font-family:var(--mono)}
+  table.cards-obj td:nth-child(6)::before{content:"Reste"}
+  table.cards-obj td:nth-child(7){grid-area:pct;font-family:var(--mono);font-weight:700}
+  table.cards-obj td:nth-child(7)::before{content:"Atteint"}
+  table.cards-obj td:nth-child(9){grid-area:date;font-family:var(--mono)}
+  table.cards-obj td:nth-child(9)::before{content:"Date cible"}
+  table.cards-obj td:nth-child(10){grid-area:depot;font-family:var(--mono)}
+  table.cards-obj td:nth-child(10)::before{content:"Dépôt / mois"}
+  table.cards-obj td:nth-child(11){grid-area:statut;text-align:right;font-size:12px;white-space:nowrap}
+  table.cards-obj td:nth-child(12){grid-area:prio;text-align:right;font-size:12px}
+  table.cards-obj td:nth-child(13){grid-area:act;display:flex;justify-content:flex-end;margin-top:4px}
+  table.cards-obj tfoot tr{grid-template-columns:1fr 1fr 1fr;grid-template-areas:none}
+  table.cards-obj tfoot td{font-family:var(--mono);white-space:nowrap}
+  table.cards-obj tfoot td:nth-child(2)::before{content:"Cible"}
+  table.cards-obj tfoot td:nth-child(3)::before{content:"Épargné"}
+  table.cards-obj tfoot td:nth-child(4)::before{content:"Reste"}
+  table.cards-obj tfoot td:nth-child(5)::before{content:"Atteint"}
+  /* --- Récurrences : Libellé, Catégorie, Montant, Fréquence, Prochaine échéance, Statut, Actions --- */
+  table.cards-rec tr{grid-template-columns:1fr 1fr auto;grid-template-areas:"nom nom montant" "cat freq statut" "ech ech ech" "act act act"}
+  table.cards-rec td:nth-child(1){grid-area:nom;font-weight:700;font-size:15px}
+  table.cards-rec td:nth-child(2){grid-area:cat;font-size:12px;color:var(--ink-soft)}
+  table.cards-rec td:nth-child(3){grid-area:montant;font-family:var(--mono);font-weight:700;font-size:16px;white-space:nowrap;text-align:right}
+  table.cards-rec td:nth-child(4){grid-area:freq;font-size:12px;color:var(--ink-soft)}
+  table.cards-rec td:nth-child(5){grid-area:ech;font-size:13px}
+  table.cards-rec td:nth-child(5):not(:empty)::before{content:"Prochaine échéance : ";display:inline}
+  table.cards-rec td:nth-child(6){grid-area:statut;font-size:12px;text-align:right;white-space:nowrap}
+  table.cards-rec td:nth-child(7){grid-area:act;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:4px;white-space:normal!important}
+  /* --- Maintenance : Équipement, Catégorie, Suivi, Intervalle, Dernière, Prochaine, Restant, Statut, Coût estimé, Coût réel, Responsable, Notes, Actions --- */
+  table.cards-maint tr{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"nom nom statut" "cat suivi suivi" "inter der proch" "restant estime reel" "resp resp resp" "notes notes notes" "act act act"}
+  table.cards-maint td:nth-child(1){grid-area:nom;font-weight:700;font-size:15px}
+  table.cards-maint td:nth-child(2){grid-area:cat;font-size:12px;color:var(--ink-soft)}
+  table.cards-maint td:nth-child(3){grid-area:suivi;font-size:12px;color:var(--ink-soft);text-align:right}
+  table.cards-maint td:nth-child(4){grid-area:inter;font-family:var(--mono)}
+  table.cards-maint td:nth-child(4)::before{content:"Intervalle"}
+  table.cards-maint td:nth-child(5){grid-area:der;font-family:var(--mono)}
+  table.cards-maint td:nth-child(5)::before{content:"Dernière"}
+  table.cards-maint td:nth-child(6){grid-area:proch;font-family:var(--mono)}
+  table.cards-maint td:nth-child(6)::before{content:"Prochaine"}
+  table.cards-maint td:nth-child(7){grid-area:restant;font-family:var(--mono);font-weight:700}
+  table.cards-maint td:nth-child(7)::before{content:"Restant";font-weight:600;color:var(--ink-soft)}
+  table.cards-maint td:nth-child(8){grid-area:statut;text-align:right;font-size:12px;white-space:nowrap}
+  table.cards-maint td:nth-child(9){grid-area:estime;font-family:var(--mono)}
+  table.cards-maint td:nth-child(9)::before{content:"Coût estimé"}
+  table.cards-maint td:nth-child(10){grid-area:reel}
+  table.cards-maint td:nth-child(10)::before{content:"Coût réel"}
+  table.cards-maint td:nth-child(10) input{width:100%!important}
+  table.cards-maint td:nth-child(11){grid-area:resp;font-size:13px}
+  table.cards-maint td:nth-child(11):not(:empty)::before{content:"Responsable : ";display:inline}
+  table.cards-maint td:nth-child(12){grid-area:notes;color:var(--ink-soft)}
+  table.cards-maint td:nth-child(12):empty,table.cards-maint td:nth-child(11):empty{display:none}
+  table.cards-maint td:nth-child(13){grid-area:act;display:flex;gap:8px;justify-content:flex-end;margin-top:4px;white-space:normal!important}
+}
 </style>
 
 </head>
@@ -841,7 +914,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     <div class="grid4" id="recRecap"></div>
 
     <div class="tbl-wrap" style="margin-top:14px">
-      <table>
+      <table class="cards cards-rec">
         <thead><tr><th>Libellé</th><th>Catégorie</th><th class="num">Montant</th><th>Fréquence</th><th>Prochaine échéance</th><th>Statut</th><th></th></tr></thead>
         <tbody id="recBody"></tbody>
       </table>
@@ -974,7 +1047,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     </div>
     <div class="section-title">Suivi des équipements</div>
     <div class="tbl-wrap">
-      <table>
+      <table class="cards cards-maint">
         <thead><tr><th>Équipement</th><th>Catégorie</th><th>Suivi</th><th class="num">Intervalle</th><th>Dernière</th><th>Prochaine échéance</th><th class="num">Restant</th><th>Statut</th><th class="num">Coût estimé</th><th class="num">Coût réel</th><th>Responsable</th><th>Notes</th><th></th></tr></thead>
         <tbody id="maintBody"></tbody>
       </table>
@@ -1007,7 +1080,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     <div class="section-title">Vos objectifs</div>
     <div class="obj-rings" id="objRings"></div>
     <div class="tbl-wrap">
-      <table>
+      <table class="cards cards-obj">
         <thead><tr><th>#</th><th>Objectif</th><th>Catégorie</th><th class="num">Cible</th><th class="num">Épargné</th><th class="num">Reste</th><th>% Atteint</th><th>Jauge</th><th>Date cible</th><th class="num">Dépôt/mois nécessaire</th><th>Statut</th><th>Priorité</th><th></th></tr></thead>
         <tbody id="objBody"></tbody>
         <tfoot id="objFoot"></tfoot>
@@ -1314,7 +1387,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v36 · 11 nov. 2026';
+const APP_VERSION = 'v37 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
