@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
-<meta name="mf-build" content="35000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-39d98mIJ+IIiYheGvO7H4H6Uy/G8R5O6jf4/3ikPIdg='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="mf-build" content="36000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-xQ78OlyN14Lh3iMjK5yc8ae80i7QtmBCk8t/kKYiE04='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script>/*!
  * Chart.js v4.4.0
  * https://www.chartjs.org
@@ -475,6 +475,38 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   .fold-h.open+.fold-b,.fold-b.open{display:block}
   .fold-h:not(.open){border-bottom-color:transparent;margin-bottom:0}
 }
+
+/* ===================== v36 : saisie rapide (+ → Dépense / Revenu) et anneaux Objectifs (P4b) ===================== */
+.sheet-bg{position:fixed;inset:0;background:rgba(20,12,6,.5);z-index:10005;display:none}
+.sheet-bg.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom));z-index:10006;box-shadow:0 -8px 24px rgba(0,0,0,.25);max-height:92vh;overflow:auto;display:none;box-sizing:border-box}
+.sheet.on{display:block}
+.sheet .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+.sheet h3{font-family:var(--serif);font-size:18px;margin:0 0 12px;text-align:center}
+.sheet .choice{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+.sheet .choice button{height:88px;border:2px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);font-size:16px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.sheet .choice button span{font-size:28px;line-height:1}
+.sheet .choice button.dep{border-color:var(--danger)}
+.sheet .choice button.rev{border-color:var(--success)}
+.sheet .amt{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:4px 0 10px}
+.sheet .amt input{width:100%;max-width:260px;border:none;border-bottom:2px solid var(--primary);background:transparent;color:var(--ink);font-family:var(--mono);font-size:34px;font-weight:700;text-align:center;padding:4px 0;min-height:56px;outline:none}
+.sheet .amt b{font-size:14px;color:var(--ink-soft)}
+.sheet .lab{font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.04em;margin:10px 0 6px;text-transform:uppercase}
+.sheet .chips{display:flex;flex-wrap:wrap;gap:8px}
+.sheet .chip{min-height:48px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+.sheet .chip.sel{background:var(--primary);color:var(--on-primary,#fff);border-color:var(--primary)}
+.sheet .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sheet select,.sheet input[type=date],.sheet input[type=text]{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--bg);color:var(--ink);font-size:15px;box-sizing:border-box}
+.sheet .hint{font-size:13px;color:var(--ink-soft);margin-top:6px;min-height:18px}
+.sheet .hint b{color:var(--ink)}
+.sheet .act{display:flex;gap:10px;margin-top:16px}
+.sheet .act .btn{flex:1;min-height:52px;font-size:16px;justify-content:center}
+.sheet .err{color:var(--danger);font-size:13px;margin-top:6px;min-height:18px}
+.obj-rings{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 10px;margin:-4px 0 6px;-webkit-overflow-scrolling:touch}
+.obj-ring{flex:0 0 auto;width:118px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.obj-ring svg{width:72px;height:72px}
+.obj-ring .n{font-size:12.5px;font-weight:700;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.obj-ring .r{font-size:12px;color:var(--ink-soft);font-family:var(--mono)}
 </style>
 
 </head>
@@ -512,7 +544,47 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   </div></div>
   <div class="subbar"><div class="hdr-in"><nav class="tabs" id="tabs" aria-label="Écrans de la section"></nav></div></div>
 </header>
-<button id="fabAdd" type="button" aria-label="Nouvelle transaction" title="Nouvelle transaction">+</button>
+<button id="fabAdd" type="button" aria-label="Nouvelle saisie" title="Nouvelle saisie">+</button>
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheetChoice" role="dialog" aria-modal="true" aria-labelledby="sheetChoiceTitle">
+  <div class="grip"></div>
+  <h3 id="sheetChoiceTitle">Que voulez-vous saisir ?</h3>
+  <div class="choice">
+    <button type="button" class="dep" id="qaChooseDep"><span>−</span>Dépense</button>
+    <button type="button" class="rev" id="qaChooseRev"><span>+</span>Revenu</button>
+  </div>
+</div>
+<div class="sheet" id="sheetDep" role="dialog" aria-modal="true" aria-labelledby="sheetDepTitle">
+  <div class="grip"></div>
+  <h3 id="sheetDepTitle">Nouvelle dépense</h3>
+  <div class="amt"><input type="number" inputmode="numeric" min="0" step="1" id="qaMontant" placeholder="0" aria-label="Montant"><b class="cur-label">FCFA</b></div>
+  <div class="lab">Catégorie</div>
+  <div class="chips" id="qaChips"></div>
+  <select id="qaCategorie" aria-label="Catégorie" style="margin-top:8px"></select>
+  <div class="lab">Description (optionnel)</div>
+  <input type="text" id="qaDescription" placeholder="Ex : Marché du samedi">
+  <div class="row2" style="margin-top:10px">
+    <div><div class="lab" style="margin-top:0">Date</div><input type="date" id="qaDate" aria-label="Date"></div>
+    <div><div class="lab" style="margin-top:0">Mode</div><select id="qaMode" aria-label="Mode de paiement"><option>Espèces</option><option>Virement</option><option>Mobile Money</option><option>CB</option><option>Chèque</option><option>Autre</option></select></div>
+  </div>
+  <div class="err" id="qaDepErr"></div>
+  <div class="act"><button type="button" class="btn secondary" id="qaDepCancel">Annuler</button><button type="button" class="btn" id="qaDepSave">Enregistrer</button></div>
+</div>
+<div class="sheet" id="sheetRev" role="dialog" aria-modal="true" aria-labelledby="sheetRevTitle">
+  <div class="grip"></div>
+  <h3 id="sheetRevTitle">Nouveau revenu</h3>
+  <div class="amt"><input type="number" inputmode="numeric" min="0" step="1" id="qrMontant" placeholder="0" aria-label="Montant"><b class="cur-label">FCFA</b></div>
+  <div class="lab">Source</div>
+  <div class="chips" id="qrChips"></div>
+  <select id="qrSource" aria-label="Source" style="margin-top:8px"></select>
+  <div class="row2" style="margin-top:10px">
+    <div><div class="lab" style="margin-top:0">Mois</div><select id="qrMois" aria-label="Mois"></select></div>
+    <div><div class="lab" style="margin-top:0">Année</div><select id="qrAnnee" aria-label="Année"></select></div>
+  </div>
+  <div class="hint" id="qrHint"></div>
+  <div class="err" id="qaRevErr"></div>
+  <div class="act"><button type="button" class="btn secondary" id="qaRevCancel">Annuler</button><button type="button" class="btn" id="qaRevSave">Ajouter</button></div>
+</div>
 
 <div class="app">
 
@@ -933,6 +1005,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
       </form>
     </div>
     <div class="section-title">Vos objectifs</div>
+    <div class="obj-rings" id="objRings"></div>
     <div class="tbl-wrap">
       <table>
         <thead><tr><th>#</th><th>Objectif</th><th>Catégorie</th><th class="num">Cible</th><th class="num">Épargné</th><th class="num">Reste</th><th>% Atteint</th><th>Jauge</th><th>Date cible</th><th class="num">Dépôt/mois nécessaire</th><th>Statut</th><th>Priorité</th><th></th></tr></thead>
@@ -1241,7 +1314,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v35 · 11 nov. 2026';
+const APP_VERSION = 'v36 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -1833,10 +1906,90 @@ document.getElementById('groups').addEventListener('click',e=>{
     blocks.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('block-card')){ e.preventDefault(); tog(e.target); } });
   }
 })();
-document.getElementById('fabAdd').addEventListener('click',()=>{
-  switchToTab('transactions');
-  setTimeout(()=>{ const el = document.getElementById('txMontant'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } }, 120);
-});
+/* ======================= SAISIE RAPIDE (v36) ======================= */
+const QA = (function(){
+  const $ = id=>document.getElementById(id);
+  const bg = $('sheetBg'), sheets = ['sheetChoice','sheetDep','sheetRev'].map($);
+  let lastMode = 'Espèces';
+  function closeAll(){ sheets.forEach(s=>s.classList.remove('on')); bg.classList.remove('on'); document.body.classList.remove('fab-hide'); }
+  function open(id){ sheets.forEach(s=>s.classList.toggle('on', s.id===id)); bg.classList.add('on'); }
+  function frequentCats(n){
+    const cnt = {}; (state.transactions||[]).forEach(t=>{ cnt[t.categorie] = (cnt[t.categorie]||0)+1; });
+    const all = getAllCategories().map(c=>c[0]);
+    const freq = Object.keys(cnt).filter(c=>all.includes(c)).sort((a,b)=>cnt[b]-cnt[a]).slice(0,n);
+    return freq.length ? freq : all.slice(0,n);
+  }
+  function frequentSources(n){
+    const tot = {}; Object.values(state.revenus||{}).forEach(m=>Object.keys(m||{}).forEach(s=>{ if(Number(m[s])>0) tot[s] = (tot[s]||0)+1; }));
+    const freq = Object.keys(tot).filter(s=>REVENU_SOURCES.includes(s)).sort((a,b)=>tot[b]-tot[a]).slice(0,n);
+    return freq.length ? freq : REVENU_SOURCES.slice(0,n);
+  }
+  function chips(container, items, select, onPick){
+    container.innerHTML = items.map(v=>`<button type="button" class="chip${select.value===v?' sel':''}" data-v="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
+    container.querySelectorAll('.chip').forEach(b=>b.addEventListener('click', ()=>{ select.value = b.dataset.v; syncChips(container, select); onPick && onPick(); }));
+  }
+  function syncChips(container, select){ container.querySelectorAll('.chip').forEach(b=>b.classList.toggle('sel', b.dataset.v===select.value)); }
+  function openDep(){
+    const sel = $('qaCategorie'); sel.innerHTML = getAllCategories().map(c=>`<option value="${escapeHtml(c[0])}">${escapeHtml(c[0])} (${c[1]})</option>`).join('');
+    const fc = frequentCats(4); sel.value = fc[0]; chips($('qaChips'), fc, sel);
+    sel.onchange = ()=>syncChips($('qaChips'), sel);
+    $('qaMontant').value = ''; $('qaDescription').value = ''; $('qaDate').value = localISO(); $('qaMode').value = lastMode; $('qaDepErr').textContent = '';
+    open('sheetDep'); setTimeout(()=>$('qaMontant').focus(), 80);
+  }
+  function revKey(){ return $('qrAnnee').value+'-'+pad2($('qrMois').value); }
+  function updateRevHint(){
+    const k = revKey(), s = $('qrSource').value, cur = Number((state.revenus[k]||{})[s]||0), add = Number($('qrMontant').value||0);
+    $('qrHint').innerHTML = cur>0
+      ? `Déjà saisi pour ${escapeHtml(s)} en ${MOIS_LABELS[Number($('qrMois').value)-1]} ${$('qrAnnee').value} : <b>${fmt(cur)} ${devise()}</b>${add>0?` → après ajout : <b>${fmt(cur+add)} ${devise()}</b>`:''}`
+      : `Aucun revenu encore saisi pour ${escapeHtml(s)} ce mois-ci.`;
+  }
+  function openRev(){
+    const now = new Date(), y = now.getFullYear();
+    const sel = $('qrSource'); sel.innerHTML = REVENU_SOURCES.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    const fs = frequentSources(4); sel.value = fs[0]; chips($('qrChips'), fs, sel, updateRevHint); sel.onchange = ()=>{ syncChips($('qrChips'), sel); updateRevHint(); };
+    $('qrMois').innerHTML = MOIS_LABELS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join(''); $('qrMois').value = String(now.getMonth()+1);
+    const years = new Set([y-1, y, y+1]); Object.keys(state.revenus||{}).forEach(k=>years.add(Number(k.slice(0,4))));
+    $('qrAnnee').innerHTML = [...years].filter(v=>v>2000).sort().map(v=>`<option>${v}</option>`).join(''); $('qrAnnee').value = String(y);
+    $('qrMontant').value = ''; $('qaRevErr').textContent = ''; updateRevHint();
+    open('sheetRev'); setTimeout(()=>$('qrMontant').focus(), 80);
+  }
+  async function saveDep(){
+    const m = Number($('qaMontant').value||0), cat = $('qaCategorie').value;
+    if(!(m>0)){ $('qaDepErr').textContent = 'Indiquez un montant.'; $('qaMontant').focus(); return; }
+    if(!cat){ $('qaDepErr').textContent = 'Choisissez une catégorie.'; return; }
+    if(editingTxId) cancelTxEdit();
+    // Même chemin que la saisie classique : on remplit le formulaire existant et on le soumet.
+    $('txDate').value = $('qaDate').value || localISO(); $('txMontant').value = m; $('txCategorie').value = cat;
+    $('txCategorie').dispatchEvent(new Event('change'));
+    $('txDescription').value = $('qaDescription').value.trim(); $('txMode').value = $('qaMode').value; $('txReference').value = ''; $('txNotes').value = '';
+    lastMode = $('qaMode').value;
+    const before = state.transactions.length;
+    $('txForm').requestSubmit ? $('txForm').requestSubmit() : $('txForm').dispatchEvent(new Event('submit',{cancelable:true}));
+    closeAll();
+    setTimeout(()=>{ if(state.transactions.length>before) showToast(`Dépense de ${fmt(m)} ${devise()} enregistrée (${cat}).`); }, 400);
+  }
+  async function saveRev(){
+    const m = Number($('qrMontant').value||0), s = $('qrSource').value, k = revKey();
+    if(!(m>0)){ $('qaRevErr').textContent = 'Indiquez un montant.'; $('qrMontant').focus(); return; }
+    if(!state.revenus[k]) state.revenus[k] = {};
+    const cur = Number(state.revenus[k][s]||0);
+    state.revenus[k][s] = cur + m;   // option 1 : ajout à la case existante
+    await persist(); refreshYearOptions(); renderAll();
+    closeAll();
+    showUndoToast(`Revenu de ${fmt(m)} ${devise()} ajouté (${s}, ${MOIS_LABELS[Number(k.slice(5,7))-1]} ${k.slice(0,4)} : ${fmt(cur+m)}).`, async ()=>{ state.revenus[k][s] = cur; await persist(); renderAll(); });
+  }
+  $('fabAdd').addEventListener('click', ()=>open('sheetChoice'));
+  $('qaChooseDep').addEventListener('click', openDep);
+  $('qaChooseRev').addEventListener('click', openRev);
+  $('qaDepCancel').addEventListener('click', closeAll); $('qaRevCancel').addEventListener('click', closeAll);
+  $('qaDepSave').addEventListener('click', saveDep); $('qaRevSave').addEventListener('click', saveRev);
+  $('qaMontant').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); saveDep(); } });
+  $('qrMontant').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); saveRev(); } });
+  $('qrMontant').addEventListener('input', updateRevHint); $('qrMois').addEventListener('change', updateRevHint); $('qrAnnee').addEventListener('change', updateRevHint);
+  bg.addEventListener('click', closeAll);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && bg.classList.contains('on')) closeAll(); });
+  return {openDep, openRev, closeAll};
+})();
 document.getElementById('tabs').addEventListener('click',e=>{
   const btn=e.target.closest('button'); if(!btn) return;
   switchToTab(btn.dataset.tab);
@@ -2951,6 +3104,10 @@ function populateObjCategorieLiee(){
 function renderObjectifs(){
   populateObjCategorieLiee();
   const rows = computeObjectifsRows();
+  document.getElementById('objRings').innerHTML = rows.map(o=>{
+    const p = Math.max(0, Math.min(1, Number(o.pctAtteint)||0)), C = 2*Math.PI*30, col = p>=1?'var(--success)':(p>=0.5?'var(--primary)':'var(--warn)');
+    return `<div class="obj-ring" title="${escapeHtml(o.nom)}"><svg viewBox="0 0 72 72" role="img" aria-label="${escapeHtml(o.nom)} : ${pct(o.pctAtteint)}"><circle cx="36" cy="36" r="30" fill="none" stroke="var(--line)" stroke-width="8"/><circle cx="36" cy="36" r="30" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(p*C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 36 36)"/><text x="36" y="41" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">${Math.round(p*100)}%</text></svg><span class="n">${escapeHtml(o.nom)}</span><span class="r">Reste ${fmt(o.reste)}</span></div>`;
+  }).join('');
   document.getElementById('objBody').innerHTML = rows.length ? rows.map((o,i)=>`
     <tr>
       <td>${i+1}</td><td>${escapeHtml(o.nom)}</td><td>${escapeHtml(o.categorie)||''}${o.categorieLiee?`<br><span style="font-size:10.5px;color:var(--ink-soft)">🔗 ${escapeHtml(o.categorieLiee)}</span>`:''}</td>
