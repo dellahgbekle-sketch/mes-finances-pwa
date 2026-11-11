@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="mf-build" content="33000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-3sU+4zkwBKIAmkak/xH8ukfLHbvJlza4oiFAJK8gwRA='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta name="mf-build" content="34000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-ek/Y/I0vZI11qJ5QGecu//GVPIHuifPL58cFNTE2sUk='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <script>(function(){var d=document.documentElement;try{var p=localStorage.getItem('mf-theme')||'sahara';var ok={sahara:1,emeraude:1,nuit:1,ocean:1,violet:1};var t=p==='auto'?((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'nuit':'sahara'):(ok[p]?p:'sahara');d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','sahara');}})();</script>
 <style>
@@ -412,6 +412,46 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   table.cards-alert td:nth-child(6){grid-area:prio;text-align:right;font-size:12px;align-self:end}
   table.cards-alert td:nth-child(7){grid-area:reco;font-size:12.5px!important;color:var(--ink-soft);margin-top:4px}
 }
+
+/* ===================== v34 : Multi-Crédits en cartes, Revenus colonne figée (P3b) ===================== */
+@media(max-width:700px){
+  /* --- Multi-Crédits : #, Intitulé, Référence, Montant initial, Capital restant, Taux, 1re échéance, Durée, Mensualité, Réel payé, Mois restants, Coût total, Coût intérêts, Statut --- */
+  table.cards-mc tr{grid-template-columns:1fr 1fr;gap:8px 10px}
+  table.cards-mc td{font-family:var(--mono);white-space:nowrap}
+  table.cards-mc td::before{display:block;font-family:var(--sans);margin-bottom:2px}
+  table.cards-mc td input{width:100%!important;box-sizing:border-box}
+  table.cards-mc tbody td:nth-child(1){display:none}
+  table.cards-mc tfoot{display:block}
+  table.cards-mc td:nth-child(2){grid-column:1/-1}
+  table.cards-mc td:nth-child(2) input{font-weight:700;font-size:16px;font-family:var(--sans)}
+  table.cards-mc td:nth-child(2)::before{content:"Intitulé"}
+  table.cards-mc td:nth-child(3)::before{content:"Référence"}
+  table.cards-mc td:nth-child(4)::before{content:"Montant initial"}
+  table.cards-mc td:nth-child(5)::before{content:"Capital restant dû"}
+  table.cards-mc td:nth-child(6)::before{content:"Taux annuel (%)"}
+  table.cards-mc td:nth-child(7)::before{content:"1ʳᵉ échéance"}
+  table.cards-mc td:nth-child(8)::before{content:"Durée totale (mois)"}
+  table.cards-mc td:nth-child(9)::before{content:"Mensualité"}
+  table.cards-mc td:nth-child(9){font-weight:700;font-size:16px}
+  table.cards-mc td:nth-child(10)::before{content:"Réel payé"}
+  table.cards-mc td:nth-child(11)::before{content:"Mois restants"}
+  table.cards-mc td:nth-child(12)::before{content:"Coût total"}
+  table.cards-mc td:nth-child(13)::before{content:"Coût intérêts"}
+  table.cards-mc td:nth-child(14){grid-column:1/-1;font-family:var(--sans);white-space:normal;border-top:1px solid var(--line);padding-top:8px;font-weight:600}
+  table.cards-mc td input[readonly]{background:var(--bg);color:var(--ink-soft)}
+  table.cards-mc tfoot tr{background:var(--bg)}
+  table.cards-mc tfoot td:empty{display:none}
+  table.cards-mc tfoot td[colspan]{font-family:var(--sans);font-size:14px}
+  table.cards-mc tfoot td:nth-child(2)::before{content:"Mensualités"}
+  table.cards-mc tfoot td:nth-child(5)::before{content:"Coût total"}
+  table.cards-mc tfoot td:nth-child(6)::before{content:"Coût intérêts"}
+  /* --- Revenus : colonne Source figée, le reste défile --- */
+  #revenusTable th:first-child,#revenusTable td:first-child{position:sticky;left:0;z-index:2;background:var(--surface);box-shadow:4px 0 6px -3px rgba(0,0,0,.18);min-width:112px;max-width:140px;white-space:normal;font-weight:600;font-size:13px}
+  #revenusTable thead th:first-child{background:var(--bg)}
+  #revenusTable tfoot td:first-child{background:var(--bg)}
+  #revenusTable th{white-space:nowrap}
+  #revenusTable input{min-height:48px}
+}
 </style>
 
 </head>
@@ -769,7 +809,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   <section class="panel" id="panel-multicredits">
     <p class="small-note">Vue consolidée de tous vos engagements de crédit (jusqu'à 5). Renseignez chaque crédit ; la mensualité (PMT) et le coût total sont calculés automatiquement. <b>Renseignez la date de la 1ʳᵉ échéance et la durée totale : le capital restant dû et les mois restants se mettent alors à jour tout seuls à chaque échéance.</b> Sans ces deux champs, saisissez-les à la main.</p>
     <div class="tbl-wrap">
-      <table>
+      <table class="cards cards-mc">
         <thead><tr><th>#</th><th>Intitulé</th><th>Référence</th><th class="num">Montant initial</th><th class="num">Capital restant dû</th><th class="num">Taux annuel</th><th class="num">1ʳᵉ échéance</th><th class="num">Durée totale (mois)</th><th class="num">Mensualité</th><th class="num">Réel payé</th><th class="num">Mois restants</th><th class="num">Coût total</th><th class="num">Coût intérêts</th><th>Statut</th></tr></thead>
         <tbody id="mcBody"></tbody>
         <tfoot id="mcFoot"></tfoot>
@@ -1178,7 +1218,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v33 · 11 nov. 2026';
+const APP_VERSION = 'v34 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
