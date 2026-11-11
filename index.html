@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="mf-build" content="31000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-LYNTipgIJmVeD6caJOQzavLil6ixfZTWe31H94LgEVc='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta name="mf-build" content="32000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-Tbrs/jZLxZZJNafVMdQRuNlRmtn6uwKmJO0d3/XXY/U='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <script>(function(){var d=document.documentElement;try{var p=localStorage.getItem('mf-theme')||'sahara';var ok={sahara:1,emeraude:1,nuit:1,ocean:1,violet:1};var t=p==='auto'?((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'nuit':'sahara'):(ok[p]?p:'sahara');d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','sahara');}})();</script>
 <style>
@@ -285,6 +285,80 @@ nav.tabs button.active{border-bottom-width:3px}
   body[data-tab="transactions"] #fabAdd{display:none}
   :root{--toast-bottom:calc(150px + env(safe-area-inset-bottom))}
 }
+
+/* ===================== v32 : lisibilité mobile + tableau de bord ===================== */
+td.num,.dash-sum .kpi .value,.block-card .pct,.block-card .row b,.hero-sub{white-space:nowrap}
+td.num,.kpi .value,.block-card .pct,.block-card .row b,.repart-leg .n{font-variant-numeric:tabular-nums}
+.dash-sum{margin-bottom:14px}
+.hero-card .kpi{border:none;padding:0}
+.hero-card .kpi .value{font-size:22px}
+.hero-card .hero-per{font-size:12px;color:var(--ink-soft);font-weight:600;margin-left:6px}
+.hero-card .bar{height:8px;margin-top:10px}
+.hero-card .bar>span{background:var(--primary)}
+.hero-card .bar>span.over{background:var(--danger)}
+.hero-sub{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink-soft);margin-top:6px;flex-wrap:wrap}
+.block-card h3{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
+.block-card .cons{display:none;font-family:var(--mono);font-weight:700;color:var(--ink);font-size:12px;letter-spacing:0}
+.block-card .cons.over{color:var(--danger)}
+.repart-cap{font-size:12px;color:var(--ink-soft);margin:-4px 0 6px}
+.repart-wrap{position:relative;padding-top:16px}
+.repart-bar{display:flex;height:30px;border-radius:8px;overflow:hidden;gap:2px;background:var(--line)}
+.repart-bar i{display:block;height:100%;min-width:3px}
+.repart-mark{position:absolute;top:0;transform:translateX(-50%);font-size:12px;line-height:1;color:var(--ink)}
+.repart-leg{display:grid;gap:8px;margin-top:12px}
+.repart-leg .r{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px}
+.repart-leg .dot{width:10px;height:10px;border-radius:3px;flex:none;align-self:center}
+.repart-leg .p{font-weight:700;font-family:var(--mono)}
+.repart-leg .t{color:var(--ink-soft);font-size:12px;white-space:nowrap}
+.repart-leg .n{margin-left:auto;font-family:var(--mono);font-weight:700;white-space:nowrap}
+#fabAdd{transition:transform .2s ease,opacity .2s ease}
+body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-events:none}
+@media(max-width:700px){
+  /* ---- en-tête compact ---- */
+  .brand{padding:8px 0;border-bottom:none;flex-wrap:nowrap}
+  .brand h1{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%}
+  .brand .rule{display:none}
+  .filters{margin:10px 0 0;gap:8px}
+  .filters label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+  .filters select,#filterYear{border-radius:999px!important;padding:0 14px!important;font-size:14px!important;font-weight:600}
+  #filterYear{width:86px!important}
+  #filterMonth{flex:1;min-width:0}
+  .filters .btn .lbl{display:none}
+  .filters .btn{min-width:48px;padding:0 12px}
+  .panel{margin-top:12px}
+  .filters .save-msg{position:fixed;top:6px;right:10px;z-index:70;margin:0;padding:3px 10px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow)}
+  td,th{padding-left:7px;padding-right:7px}
+  /* ---- P1 : zones tactiles >= 48 px ---- */
+  button:not(.pin-key):not(#fabAdd),.btn,select,textarea,
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]):not([type=file]){min-height:48px}
+  button:not(.pin-key):not(#fabAdd):not(.theme-tile){min-width:48px}
+  input[type=checkbox],input[type=radio]{width:28px;height:28px;margin:10px}
+  .btn.small,.btn.danger{padding-left:14px;padding-right:14px}
+  nav.tabs button{min-height:44px}
+  /* ---- P1 : textes >= 12 px ---- */
+  th,.tag,.badge,.nav-badge,.kpi .label,.chart-box h4,.field label,form.tx-form label,.theme-tile .d{font-size:12px}
+  .small-note{font-size:12.5px}
+  nav.groups button{font-size:12px}
+  [style*="font-size:9px"],[style*="font-size: 9px"],[style*="font-size:10px"],[style*="font-size: 10px"],[style*="font-size:10.5px"],[style*="font-size: 10.5px"],[style*="font-size:11px"],[style*="font-size: 11px"],[style*="font-size:11.5px"],[style*="font-size: 11.5px"]{font-size:12px!important}
+  /* ---- P2 : tableau de bord ---- */
+  .dash-sum{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .dash-sum .hero-card{grid-column:1/-1}
+  .dash-sum .dash-taux{display:none}
+  .dash-sum .card{padding:12px 14px}
+  .dash-sum .kpi{flex-direction:column;align-items:flex-start;gap:2px;padding:0;border:none}
+  .dash-sum .kpi .value{font-size:15px}
+  .dash-sum .hero-card .kpi .value{font-size:30px}
+  #dashBlocks{grid-template-columns:1fr 1fr!important;gap:10px}
+  .block-card{padding:12px;cursor:pointer}
+  .block-card h3{font-size:12px;margin-bottom:4px}
+  .block-card .cons{display:inline}
+  .block-card .pct{font-size:17px;margin:2px 0}
+  .block-card .pct span{display:none}
+  .block-card .row{display:none}
+  .block-card.open .row{display:flex}
+  .block-card.open{grid-column:1/-1}
+  .charts-row{margin-top:12px}
+}
 </style>
 
 </head>
@@ -328,38 +402,41 @@ nav.tabs button.active{border-bottom-width:3px}
 
   <div class="filters">
     <label>Année</label>
-    <input type="number" id="filterYear" list="yearOptions" min="2000" max="2100" step="1" style="width:90px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:13px;color:var(--ink);font-family:var(--mono)">
+    <input type="number" id="filterYear" aria-label="Année" list="yearOptions" min="2000" max="2100" step="1" style="width:90px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:13px;color:var(--ink);font-family:var(--mono)">
     <datalist id="yearOptions"></datalist>
     <label>Mois</label>
-    <select id="filterMonth">
+    <select id="filterMonth" aria-label="Mois">
       <option value="all">Tous les mois</option>
     </select>
     <span class="save-msg" id="saveMsg">✓ enregistré</span>
     <span id="syncBadge" style="display:none;font-size:12px;font-weight:700;cursor:default"></span>
-    <span style="margin-left:auto;display:flex;gap:6px"><button class="btn secondary small" id="lockNowBtn" title="Verrouiller avec le code PIN">🔒 Verrouiller</button><button class="btn secondary small" id="quitBtn" title="Fermer l'application" style="display:none">⏻ Quitter</button></span>
+    <span style="margin-left:auto;display:flex;gap:6px"><button class="btn secondary small" id="lockNowBtn" title="Verrouiller avec le code PIN" aria-label="Verrouiller avec le code PIN">🔒<span class="lbl"> Verrouiller</span></button><button class="btn secondary small" id="quitBtn" title="Fermer l'application" aria-label="Fermer l'application" style="display:none">⏻<span class="lbl"> Quitter</span></button></span>
   </div>
 
   <!-- DASHBOARD -->
   <section class="panel active" id="panel-dashboard">
+    <div class="grid4 dash-sum" id="dashSum">
+      <div class="card hero-card">
+        <div class="kpi"><span class="label">Reste à vivre<span class="hero-per" id="heroPer"></span></span><span class="value" id="kpiSolde">—</span></div>
+        <div class="bar"><span id="heroBar"></span></div>
+        <div class="hero-sub"><span id="heroUsed"></span><span id="heroEp"></span></div>
+      </div>
+      <div class="card"><div class="kpi"><span class="label">Total revenus</span><span class="value" id="kpiRevenus">—</span></div></div>
+      <div class="card"><div class="kpi"><span class="label">Total dépenses</span><span class="value" id="kpiDepenses">—</span></div></div>
+      <div class="card dash-taux"><div class="kpi"><span class="label">Taux d'épargne</span><span class="value" id="kpiTauxEpargne">—</span></div></div>
+    </div>
+
     <div class="grid4" id="dashBlocks"></div>
 
     <div class="charts-row">
       <div class="chart-box">
-        <h4>Répartition Budget vs Réalisé</h4>
-        <canvas id="chartRepartition"></canvas>
+        <h4>Où va l'argent (réalisé)</h4>
+        <div id="repartBar"></div>
       </div>
       <div class="chart-box">
         <h4>Évolution mensuelle — Revenus / Dépenses</h4>
         <canvas id="chartEvolution"></canvas>
       </div>
-    </div>
-
-    <div class="section-title">Synthèse financière</div>
-    <div class="grid4">
-      <div class="card"><div class="kpi"><span class="label">Total dépenses</span><span class="value" id="kpiDepenses">—</span></div></div>
-      <div class="card"><div class="kpi"><span class="label">Total revenus</span><span class="value" id="kpiRevenus">—</span></div></div>
-      <div class="card"><div class="kpi"><span class="label">Solde net</span><span class="value" id="kpiSolde">—</span></div></div>
-      <div class="card"><div class="kpi"><span class="label">Taux d'épargne</span><span class="value" id="kpiTauxEpargne">—</span></div></div>
     </div>
 
     <div class="section-title">Détail revenus de la période</div>
@@ -1048,7 +1125,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v31 · 11 nov. 2026';
+const APP_VERSION = 'v32 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -1617,6 +1694,29 @@ document.getElementById('groups').addEventListener('click',e=>{
   if(groupOfTab(currentTab)===gid || !ids.length) return;
   switchToTab(ids.includes(lastTabInGroup[gid]) ? lastTabInGroup[gid] : ids[0]);
 });
+(function(){
+  let last = window.scrollY||0, busy = false;
+  const set = v=>document.body.classList.toggle('fab-hide', v);
+  window.addEventListener('scroll',()=>{
+    if(busy) return; busy = true;
+    requestAnimationFrame(()=>{
+      const y = window.scrollY||0, d = y-last;
+      const a = document.activeElement;
+      if(a && a.matches && a.matches('input,select,textarea')) set(true);
+      else if(y<80) set(false); else if(d>8) set(true); else if(d<-8) set(false);
+      if(Math.abs(d)>8) last = y;
+      busy = false;
+    });
+  },{passive:true});
+  document.addEventListener('focusin',e=>{ if(e.target.matches && e.target.matches('input,select,textarea')) set(true); });
+  document.addEventListener('focusout',e=>{ if(e.target.matches && e.target.matches('input,select,textarea')) set(false); });
+  const blocks = document.getElementById('dashBlocks');
+  if(blocks){
+    const tog = c=>{ const o = c.classList.toggle('open'); c.setAttribute('aria-expanded', o?'true':'false'); };
+    blocks.addEventListener('click',e=>{ const c = e.target.closest('.block-card'); if(c) tog(c); });
+    blocks.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('block-card')){ e.preventDefault(); tog(e.target); } });
+  }
+})();
 document.getElementById('fabAdd').addEventListener('click',()=>{
   switchToTab('transactions');
   setTimeout(()=>{ const el = document.getElementById('txMontant'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } }, 120);
@@ -1818,6 +1918,22 @@ const pseudo3dRingPlugin = {
   }
 };
 
+function renderRepartBar(types, realData){
+  const el = document.getElementById('repartBar'); if(!el) return;
+  const total = realData.reduce((a,b)=>a+Number(b||0),0);
+  if(!(total>0)){ el.innerHTML = '<div class="empty">Aucune dépense sur la période.</div>'; return; }
+  const cols = ['--besoins','--epargne','--desirs','--invest'];
+  const tg = types.map(t=>Number(getGroupTarget(t))||0), tsum = tg.reduce((a,b)=>a+b,0) || 1;
+  let seg = '', marks = '', leg = '', cum = 0, aria = [];
+  types.forEach((t,i)=>{
+    const v = Number(realData[i]||0), share = v/total*100;
+    if(v>0) seg += `<i style="width:${share.toFixed(2)}%;background:var(${cols[i]})"></i>`;
+    if(i<types.length-1){ cum += tg[i]/tsum*100; marks += `<span class="repart-mark" aria-hidden="true" style="left:${cum.toFixed(2)}%">▼</span>`; }
+    leg += `<div class="r"><span class="dot" style="background:var(${cols[i]})"></span><span>${GROUP_LABEL[t]}</span><span class="p">${Math.round(share)} %</span><span class="t">objectif ${Math.round(tg[i]/tsum*100)} %</span><span class="n">${fmt(v)} ${devise()}</span></div>`;
+    aria.push(`${GROUP_LABEL[t].replace(/^\S+\s/,'')} ${Math.round(share)} % (objectif ${Math.round(tg[i]/tsum*100)} %)`);
+  });
+  el.innerHTML = `<div class="repart-cap">▼ = objectif cumulé de la règle budgétaire</div><div class="repart-wrap" role="img" aria-label="Répartition du réalisé : ${aria.join(', ')}">${marks}<div class="repart-bar">${seg}</div></div><div class="repart-leg">${leg}</div>`;
+}
 function renderDashboard(){
   const {year,month} = currentFilter();
   const blocks = document.getElementById('dashBlocks');
@@ -1830,8 +1946,8 @@ function renderDashboard(){
     const consomme = budget>0 ? realise/budget : 0;
     const tauxRevenu = revenuPeriode>0 ? realise/revenuPeriode : 0;
     const cls = type==='BESOINS'?'':type.toLowerCase();
-    return `<div class="card block-card ${cls}">
-      <h3>${GROUP_LABEL[type]} (${Math.round(getGroupTarget(type)*100)}%)</h3>
+    return `<div class="card block-card ${cls}" role="button" tabindex="0" aria-expanded="false">
+      <h3><span>${GROUP_LABEL[type]} (${Math.round(getGroupTarget(type)*100)}%)</span><span class="cons${consomme>1?' over':''}">${pct(consomme)}</span></h3>
       <div class="pct">${fmt(realise)} <span style="font-size:12px;color:var(--ink-soft)">${devise()}</span></div>
       <div class="row"><span>Budget</span><b>${fmt(budget)}</b></div>
       <div class="row"><span>Écart</span><b style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</b></div>
@@ -1850,6 +1966,15 @@ function renderDashboard(){
   const kSolde = document.getElementById('kpiSolde');
   kSolde.textContent = fmt(solde)+' '+devise(); kSolde.className='value '+(solde<0?'neg':'pos');
   document.getElementById('kpiTauxEpargne').textContent = revenuPeriode>0?pct(tauxEp):'—';
+  {
+    const budgetTotal = types.reduce((s,t)=>s+(month==='all'?budgetByType(t)*12:budgetByType(t)),0);
+    const used = budgetTotal>0 ? totalDep/budgetTotal : 0;
+    const mi = parseInt(month);
+    document.getElementById('heroPer').textContent = month==='all' ? ' · année '+year : ' · '+(MOIS_LABELS[mi-1]||'')+' '+year;
+    const hb = document.getElementById('heroBar'); hb.style.width = Math.min(used*100,100)+'%'; hb.className = used>1?'over':'';
+    document.getElementById('heroUsed').textContent = budgetTotal>0 ? Math.round(used*100)+' % du budget utilisé' : 'Budget non défini';
+    document.getElementById('heroEp').textContent = revenuPeriode>0 ? 'Taux d\'épargne '+pct(tauxEp) : '';
+  }
 
   // revenue detail table
   const revBody = document.getElementById('dashRevenusBody');
@@ -1863,43 +1988,9 @@ function renderDashboard(){
   }).join('') + `<tr style="font-weight:700;background:var(--bg)"><td>TOTAL REVENUS</td><td class="num">${fmt(totalPrevu)}</td><td class="num">${fmt(totalReal)}</td><td class="num">${fmt(totalReal-totalPrevu)}</td></tr>`;
 
   // charts
-  const ctx1 = document.getElementById('chartRepartition');
-  const budgetData = types.map(t=> month==='all'?budgetByType(t)*12:budgetByType(t));
   const realData = types.map(t=>sumByType(t,year,month));
-  if(chartRep) chartRep.destroy();
-  chartRep = new Chart(ctx1,{
-    type:'doughnut',
-    data:{ labels:types.map(t=>GROUP_LABEL[t]), datasets:[{ data:realData, backgroundColor:[cssVar('--besoins'),cssVar('--epargne'),cssVar('--desirs'),cssVar('--invest')], borderWidth:2, borderColor:cssVar('--surface') }]},
-    plugins:[pseudo3dRingPlugin],
-    options:{
-      layout:{padding:{bottom:16}},
-      plugins:{
-        legend:{
-          position:'bottom', labels:{boxWidth:10, font:{size:11},
-            generateLabels:(chart)=>{
-              const ds = chart.data.datasets[0];
-              const total = ds.data.reduce((a,b)=>a+Number(b||0),0);
-              return chart.data.labels.map((label,i)=>{
-                const val = Number(ds.data[i]||0);
-                const pctVal = total>0 ? Math.round(val/total*100) : 0;
-                return { text:`${label} (${pctVal}%)`, fillStyle:ds.backgroundColor[i], strokeStyle:ds.backgroundColor[i], index:i };
-              });
-            }
-          }
-        },
-        tooltip:{
-          callbacks:{
-            label:(context)=>{
-              const ds = context.dataset.data;
-              const total = ds.reduce((a,b)=>a+Number(b||0),0);
-              const pctVal = total>0 ? Math.round(context.parsed/total*100) : 0;
-              return `${context.label}: ${fmt(context.parsed)} ${devise()} (${pctVal}%)`;
-            }
-          }
-        }
-      }
-    }
-  });
+  chartRep = null;
+  renderRepartBar(types, realData);
 
   const ctx2 = document.getElementById('chartEvolution');
   const revByMonth=[], depByMonth=[];
@@ -1918,7 +2009,7 @@ function renderDashboard(){
     ]},
     options:{
       plugins:{
-        legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+        legend:{position:'bottom',labels:{boxWidth:10,font:{size:12}}},
         tooltip:{
           callbacks:{
             afterLabel:(context)=>{
