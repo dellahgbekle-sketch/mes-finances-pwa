@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="mf-build" content="38000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-cCEL3RulFwHkKaVYouNGPyOtrIStdUsE1dA1OPJ5ktI='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta name="mf-build" content="39000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-mes1M7mgk+GVnINJDQAXFFxKQK4FWbK82GnFzTYy3vI='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <script>(function(){var d=document.documentElement;try{var p=localStorage.getItem('mf-theme')||'sahara';var ok={sahara:1,emeraude:1,nuit:1,ocean:1,violet:1};var t=p==='auto'?((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'nuit':'sahara'):(ok[p]?p:'sahara');d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','sahara');}})();</script>
 <style>
@@ -233,6 +233,15 @@ input,select,textarea{background:var(--surface);color:var(--ink);border-color:va
 .tag{color:var(--on-tag)}
 .nav-badge{color:var(--on-danger)}
 #lockScreen{background:var(--lock-bg)}
+.pin-forgot{margin-top:18px;background:none;border:none;color:#fff;opacity:.85;text-decoration:underline;font-size:14px;min-height:48px;padding:0 16px;cursor:pointer}
+.pin-wipe{margin:10px 20px 0;max-width:420px;background:rgba(255,255,255,.12);border-radius:14px;padding:14px 16px;color:#fff;font-size:14px;line-height:1.45}
+.pin-wipe p{margin:0 0 10px}
+.pin-wipe input{width:100%;box-sizing:border-box;min-height:48px;border-radius:10px;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.25);color:#fff;padding:0 12px;font-size:16px;letter-spacing:.08em}
+.pin-wipe .row{display:flex;gap:10px;margin-top:10px}
+.pin-wipe .row button{flex:1;min-height:48px;border-radius:10px;border:none;font-weight:700;font-size:14px;cursor:pointer}
+#pinWipeCancel{background:rgba(255,255,255,.2);color:#fff}
+#pinWipeGo{background:#B42318;color:#fff}
+#pinWipeGo:disabled{opacity:.45;cursor:default}
 .grid2>*,.grid4>*,.charts-row>*{min-width:0}
 
 /* ===================== v31 : navigation B (4 groupes + sous-onglets) ===================== */
@@ -644,6 +653,12 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     <button class="pin-key wide" data-key="back">⌫</button>
   </div>
   <div class="pin-error" id="pinError"></div>
+  <button type="button" id="pinForgot" class="pin-forgot">Code oublié ?</button>
+  <div id="pinWipe" class="pin-wipe" hidden>
+    <p><b>Effacer les données de cet appareil ?</b><br>L'application repartira vierge. Si la synchronisation est activée, vous retrouverez tout en vous reconnectant (même compte, même phrase secrète). Sinon, les données de cet appareil seront perdues.</p>
+    <input type="text" id="pinWipeConfirm" placeholder="Tapez EFFACER pour confirmer" autocomplete="off" autocapitalize="characters" aria-label="Tapez EFFACER pour confirmer">
+    <div class="row"><button type="button" id="pinWipeCancel">Annuler</button><button type="button" id="pinWipeGo" disabled>Effacer et repartir à zéro</button></div>
+  </div>
 </div>
 
 
@@ -817,7 +832,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
 
     <div class="section-title">🔒 Sécurité</div>
     <div class="card">
-      <p class="small-note" style="margin-top:0">Protège l'ouverture de l'application par un code à 4-6 chiffres. Le code n'est jamais stocké en clair (seule une empreinte cryptographique est conservée). <b>Attention : il n'existe aucune récupération en cas d'oubli</b> — tu devras réinitialiser tes données via l'onglet Paramètres avancés si tu perds ton code.</p>
+      <p class="small-note" style="margin-top:0">Protège l'ouverture de l'application par un code à 4-6 chiffres. Le code n'est jamais stocké en clair (seule une empreinte cryptographique est conservée). <b>Attention : le code ne peut pas être récupéré.</b> En cas d'oubli, le bouton « Code oublié ? » de l'écran de verrouillage efface les données <b>de cet appareil</b> et l'application repart vierge ; si la synchronisation est activée, reconnectez-vous ensuite (même compte, même phrase secrète) pour tout retrouver. Sans synchronisation ni export récent, les données de l'appareil sont perdues.</p>
       <div id="pinStatusText" class="small-note" style="font-weight:700;color:var(--ink)"></div>
       <div class="two-col-form" style="margin-top:10px">
         <div class="field"><label>Nouveau code PIN (4-6 chiffres)</label><input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="paramPinNew" placeholder="••••"></div>
@@ -830,7 +845,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     <div class="section-title">ℹ️ À propos</div>
     <div class="card">
       <div class="kpi"><span class="label">Version de l'application</span><span class="value" id="appVersionText" style="font-size:13px"></span></div>
-      <p class="small-note" style="margin:6px 0 0">En cas de doute sur la mise à jour de l'app, compare ce numéro avec celui annoncé après un déploiement.</p>
+      <p class="small-note" style="margin:6px 0 0">Sur <b>Windows</b>, l'application vérifie et installe la mise à jour à chaque lancement (connexion nécessaire). Sur <b>Android</b>, fermez puis rouvrez l'application : la nouvelle version est récupérée en arrière-plan et s'applique à la réouverture suivante. En cas de doute, comparez ce numéro avec celui annoncé.</p>
     </div>
 
     <div class="section-title">🔀 Réagencement des menus</div>
@@ -845,11 +860,11 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
       <button class="btn secondary" id="tabOrderReset" style="margin-top:10px">Réinitialiser l'ordre par défaut</button>
     </div>
 
-    <div class="section-title">💾 Sauvegarde & Synchronisation multi-appareils</div>
+    <div class="section-title">💾 Sauvegarde de secours (export / import)</div>
     <div class="card">
       <p class="small-note" style="margin-top:0">
-        Vos données sont enregistrées automatiquement dans <b>ce navigateur, sur cet appareil</b>. Pour les retrouver sur un autre
-        ordinateur ou navigateur, ou pour vous constituer une sauvegarde de sécurité, exportez un fichier puis importez-le à l'endroit voulu.
+        Vos données sont enregistrées automatiquement sur <b>cet appareil</b>. Pour les retrouver sur un autre appareil, le plus simple est la
+        <b>☁️ Synchronisation</b> ci-dessus. L'export / import ci-dessous reste utile comme copie de secours, ou pour transférer sans synchronisation.
       </p>
       <div class="two-col-form">
         <div>
@@ -878,7 +893,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
         <div><label>Date</label><input type="date" id="txDate" required></div>
         <div><label>Montant (<span class="cur-label">FCFA</span>)</label><input type="number" id="txMontant" min="0" step="1" required></div>
         <div><label>Catégorie</label><select id="txCategorie" required></select></div>
-        <div><label>Type 50/20/20/10</label><select id="txType" disabled></select></div>
+        <div><label>Bloc budgétaire (auto)</label><select id="txType" disabled></select></div>
         <div class="full"><label>Description</label><input type="text" id="txDescription" placeholder="Ex : Loyer janvier"></div>
         <div><label>Mode de paiement</label>
           <select id="txMode">
@@ -1235,7 +1250,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
       </div>
       <div class="card">
         <div class="section-title" style="margin-top:0">💡 Principes de décision financière responsable</div>
-        <div class="principle"><b>🎯 Règle 50/20/20/10</b> — Besoins 50% · Épargne 20% · Désirs 20% · Investissements 10%. Respecter cette répartition chaque mois.</div>
+        <div class="principle"><b>🎯 Règle budgétaire</b> — Besoins <span class="rule-b">50</span>% · Épargne <span class="rule-e">20</span>% · Désirs <span class="rule-d">20</span>% · Investissements <span class="rule-i">10</span>% (réglable dans ⚙️ Paramètres). Respecter cette répartition chaque mois.</div>
         <div class="principle"><b>📦 Fonds d'urgence</b> — Constituer en priorité 3 à 6 mois de dépenses. Ne jamais y toucher sauf urgence réelle.</div>
         <div class="principle"><b>📚 Investir en soi-même</b> — Formation et perfectionnement ont le meilleur ROI. Minimum 10 000 FCFA/mois.</div>
         <div class="principle"><b>⚡ Automatiser l'épargne</b> — Épargner dès réception du salaire, avant toute dépense.</div>
@@ -1247,12 +1262,12 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
 
   <!-- REFERENTIEL -->
   <section class="panel" id="panel-referentiel">
-    <p class="small-note">Liste des catégories utilisées dans toute l'application, avec leur type 50/20/20/10. Vous pouvez ajouter vos propres catégories : elles apparaîtront automatiquement dans Transactions, Budget mensuel et Suivi annuel.</p>
+    <p class="small-note">Liste des catégories utilisées dans toute l'application, avec leur bloc budgétaire (Besoins, Épargne, Désirs, Investissements ou Revenu). Vous pouvez ajouter vos propres catégories : elles apparaîtront automatiquement dans Transactions, Budget mensuel et Suivi annuel.</p>
     <div class="card">
       <div class="section-title" style="margin-top:0">Ajouter une catégorie</div>
       <div class="two-col-form">
         <div class="field"><label>Nom de la catégorie</label><input type="text" id="refNewName" placeholder="Ex : Frais bancaires"></div>
-        <div class="field"><label>Type 50/20/20/10</label>
+        <div class="field"><label>Bloc budgétaire</label>
           <select id="refNewType">
             <option value="BESOINS">🏠 Besoins</option>
             <option value="EPARGNE">💚 Épargne</option>
@@ -1276,11 +1291,35 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   <!-- GUIDE -->
   <section class="panel" id="panel-guide">
     <div class="card">
-      <div class="section-title" style="margin-top:0">🎯 Règle 50/20/20/10</div>
-      <div class="principle"><b>50% — Besoins</b> — Logement, alimentation, transport, santé. Dépenses incompressibles.</div>
-      <div class="principle"><b>20% — Épargne</b> — Épargne urgence, retraite. Payez-vous EN PREMIER avant toute dépense.</div>
-      <div class="principle"><b>20% — Désirs</b> — Loisirs, restaurants, voyages, shopping. Ce qui améliore votre qualité de vie.</div>
-      <div class="principle"><b>10% — Investissements</b> — Mobilier, équipement, formation, placements. Pour développer patrimoine et compétences.</div>
+      <div class="section-title" style="margin-top:0">📱 Sur téléphone (Android)</div>
+      <div class="principle"><b>Installer</b> — Ouvrez l'adresse de l'application dans Chrome, menu ⋮ → "Ajouter à l'écran d'accueil" (ou "Installer l'application"). Elle s'ouvre ensuite comme une application, hors connexion compris.</div>
+      <div class="principle"><b>Se repérer</b> — La barre du bas regroupe les écrans en 4 sections : <b>Suivi</b> (Tableau de bord, Transactions, Dépenses récurrentes, Budget, Revenus, Alertes), <b>Planifier</b> (Objectifs, Projection, Suivi annuel), <b>Patrimoine</b> (Patrimoine net, Investissements, Crédit, Multi-Crédits, Maintenance), <b>Outils</b> (Paramètres, Référentiel, Guide). Les écrans de la section choisie apparaissent en pastilles en haut. Un badge rouge sur Suivi / Alertes signale des alertes actives.</div>
+      <div class="principle"><b>Saisir vite avec le bouton "+"</b> — Il demande d'abord <b>Dépense</b> ou <b>Revenu</b>. Dépense : montant, catégorie (vos 4 plus fréquentes en pastilles), date du jour, mode de paiement ; c'est le même enregistrement que le formulaire de Transactions. Revenu : montant, source, mois ; le montant <b>s'ajoute</b> à la case source / mois de l'onglet Revenus, et la valeur déjà saisie est affichée pour éviter les doublons. Le bouton s'efface quand vous faites défiler ou saisissez un champ.</div>
+      <div class="principle"><b>Lire les tableaux</b> — Sur téléphone, les tableaux sont présentés en cartes (une ligne = une carte) avec les mêmes boutons. Les grilles mois par mois (Revenus, Crédit, Projection, Suivi annuel) gardent la première colonne fixe : faites défiler vers la droite pour voir les mois.</div>
+      <div class="principle"><b>Tableau de bord</b> — "Reste à vivre" = revenus − dépenses de la période choisie, avec la part du budget utilisée et le taux d'épargne ; les 4 blocs se déplient d'un toucher ; la barre "Où va l'argent" montre la part réalisée de chaque bloc et les repères ▼ de votre règle.</div>
+      <div class="principle"><b>Verrouiller / Quitter</b> — 🔒 verrouille immédiatement (code PIN). ⏻ Quitter enregistre, synchronise si activé, puis verrouille : fermez ensuite l'application depuis les applications récentes (Android n'autorise pas une application web à se fermer seule).</div>
+      <div class="principle"><b>Pages longues</b> — Dans Paramètres et ce Guide, touchez un titre pour ouvrir sa section.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">🖥️ Sur Windows (application .exe)</div>
+      <div class="principle"><b>Mise à jour automatique</b> — À chaque lancement, l'application vérifie s'il existe une version plus récente et l'installe (connexion nécessaire ; sans connexion, la version présente s'ouvre). Le numéro de version est visible dans ⚙️ Paramètres › À propos.</div>
+      <div class="principle"><b>Quitter</b> — ⏻ enregistre, synchronise si activé, puis ferme la fenêtre. Fermer la fenêtre avec la croix enregistre aussi (sauvegarde à chaque saisie).</div>
+      <div class="principle"><b>Mêmes données que le téléphone</b> — Activez la synchronisation sur les deux appareils avec le même compte et la même phrase secrète (voir "💾 Sauvegarde, synchronisation et multi-appareils").</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">🎨 Apparence</div>
+      <div class="principle"><b>5 thèmes</b> — Sahara (par défaut, motif brique), Émeraude, Nuit (sombre), Océan, Violet, plus "Automatique" (Sahara le jour, Nuit si l'appareil est en mode sombre), dans ⚙️ Paramètres › Apparence. Le choix est propre à chaque appareil et n'est pas synchronisé.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title" style="margin-top:0">🎯 Votre règle budgétaire : <span class="rule-txt">50 / 20 / 20 / 10</span></div>
+      <p class="small-note" style="margin-top:0">Les pourcentages ci-dessous sont ceux réglés dans ⚙️ Paramètres (règle par défaut : 50 / 20 / 20 / 10). Ils pilotent le Tableau de bord, le Budget mensuel et les Alertes.</p>
+      <div class="principle"><b><span class="rule-b">50</span>% — Besoins</b> — Logement, alimentation, transport, santé. Dépenses incompressibles.</div>
+      <div class="principle"><b><span class="rule-e">20</span>% — Épargne</b> — Épargne urgence, retraite. Payez-vous EN PREMIER avant toute dépense.</div>
+      <div class="principle"><b><span class="rule-d">20</span>% — Désirs</b> — Loisirs, restaurants, voyages, shopping. Ce qui améliore votre qualité de vie.</div>
+      <div class="principle"><b><span class="rule-i">10</span>% — Investissements</b> — Mobilier, équipement, formation, placements. Pour développer patrimoine et compétences.</div>
     </div>
 
     <div class="grid2" style="margin-top:14px">
@@ -1290,7 +1329,8 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
         <div class="principle"><b>Attribution automatique</b> — Le Type (BESOINS / EPARGNE / DESIRS / INVEST.) se remplit automatiquement selon la catégorie choisie.</div>
         <div class="principle"><b>Modifier les catégories</b> — Ajoutez vos propres catégories dans l'onglet 📚 Référentiel ; elles apparaissent aussitôt partout dans l'application.</div>
         <div class="principle"><b>Synchronisation automatique</b> — Toute catégorie utilisée dans Transactions, Budget mensuel ou Investissements mais absente ailleurs est désormais créée automatiquement dans les autres onglets (aucun poste ne se perd).</div>
-        <div class="principle"><b>Modifier une transaction</b> — Dans 📝 Transactions, cliquez sur "Modifier" en bout de ligne : le formulaire se pré-remplit, corrigez puis "Enregistrer les modifications" (ou "Annuler").</div>
+        <div class="principle"><b>Modifier une transaction</b> — Dans 📝 Transactions, touchez "Modifier" (en bout de ligne sur PC, dans la carte sur téléphone) : le formulaire se pré-remplit, corrigez puis "Enregistrer les modifications" (ou "Annuler").</div>
+        <div class="principle"><b>Supprimer sans crainte</b> — Après "Suppr.", un bandeau "Annuler" reste 6 secondes pour remettre la ligne (transactions, objectifs, maintenance, patrimoine).</div>
       </div>
       <div class="card">
         <div class="section-title" style="margin-top:0">Devises & codes</div>
@@ -1326,21 +1366,21 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
       <div class="principle"><b>Paramètres</b> — Montant, taux annuel, durée et date de 1ère mensualité se saisissent en haut de l'onglet.</div>
       <div class="principle"><b>Référence du crédit</b> — Renseignez une référence (ex : "CRED-PRINC-01"), puis reportez-la dans le champ "Référence" de vos transactions "Remboursement crédit bancaire" : le montant réellement payé sera lié précisément à ce crédit (indispensable si vous suivez plusieurs prêts en 🏦 Multi-Crédits).</div>
       <div class="principle"><b>Tableau d'amortissement</b> — Calculé automatiquement mois par mois : capital, intérêts et capital restant dû.</div>
-      <div class="principle"><b>Taux d'endettement</b> — Norme bancaire : la mensualité ne devrait pas dépasser 33% du revenu. Suivi dans cet onglet et dans 🔔 Alertes.</div>
+      <div class="principle"><b>Taux d'endettement</b> — Norme bancaire : la mensualité ne devrait pas dépasser 33% du revenu (seuil réglable dans ⚙️ Paramètres › Taux endettement max). Suivi dans cet onglet et dans 🔔 Alertes.</div>
     </div>
 
     <div class="card" style="margin-top:14px">
-      <div class="section-title" style="margin-top:0">Nouveaux onglets (v13-v14)</div>
+      <div class="section-title" style="margin-top:0">🗂️ Historique · Onglets ajoutés en v13-v14</div>
       <div class="principle"><b>⚙️ Paramètres</b> — Personnalisez la règle de répartition (les 4 % doivent totaliser 100%), votre nom, la devise, la tolérance de dépassement, le nombre de mois de fonds d'urgence cible et le taux d'endettement maximal. Ces réglages pilotent automatiquement le Tableau de bord, le Budget mensuel et les Alertes.</div>
       <div class="principle"><b>🔧 Maintenance</b> — Créez vos équipements avec deux modes de suivi au choix : 📅 par temps (intervalle en mois) ou 🚗 par kilométrage pour les équipements roulants (véhicules) — renseignez alors le kilométrage à la dernière maintenance, l'intervalle en km et mettez à jour le kilométrage actuel via le bouton "MAJ km". Échéance et statut se calculent automatiquement dans les deux cas.</div>
-      <div class="principle"><b>🏦 Multi-Crédits</b> — Vue consolidée jusqu'à 5 crédits simultanés, avec mensualité (PMT) calculée automatiquement et taux d'endettement global (cumulé avec l'onglet Crédit bancaire). Une référence par crédit permet de suivre le montant réellement payé pour chacun.</div>
+      <div class="principle"><b>🏦 Multi-Crédits</b> — Vue consolidée jusqu'à 5 crédits simultanés, avec mensualité (PMT) calculée automatiquement et taux d'endettement global (cumulé avec l'onglet Crédit bancaire). Une référence par crédit permet de suivre le montant réellement payé pour chacun. Si la 1ʳᵉ échéance et la durée sont renseignées, le capital restant dû et les mois restants se recalculent automatiquement chaque mois (sinon saisissez-les à la main).</div>
       <div class="principle"><b>🎯 Objectifs Épargne</b> — Définissez des objectifs chiffrés avec date cible ; le dépôt mensuel nécessaire et la jauge de progression se calculent automatiquement. Astuce : reliez un objectif à une catégorie existante ("Catégorie liée (auto)") pour que "Épargné à ce jour" se mette à jour tout seul depuis vos transactions, sans ressaisie manuelle.</div>
       <div class="principle"><b>💎 Patrimoine Net</b> — Catégories d'actifs et de passifs proposées en listes déroulantes prédéfinies. Un tableau "📋 Bilan par catégorie" récapitule vos actifs et passifs côte à côte avant le calcul du patrimoine net. Le passif "Crédit bancaire principal" reprend automatiquement le capital restant dû de l'onglet Crédit bancaire.</div>
       <div class="principle"><b>📈 Projection Financière</b> — Simulez votre trajectoire financière sur 12/24/36 mois selon des hypothèses de croissance, d'inflation et de rendement que vous définissez.</div>
     </div>
 
     <div class="card" style="margin-top:14px">
-      <div class="section-title" style="margin-top:0">🆕 Dernières améliorations</div>
+      <div class="section-title" style="margin-top:0">🗂️ Historique · Améliorations v14</div>
       <div class="principle"><b>Devise au choix</b> — FCFA (XOF/XAF), EUR, USD, GBP, MAD, NGN, GHS, CAD… sélectionnable dans ⚙️ Paramètres et répercutée automatiquement partout.</div>
       <div class="principle"><b>Sauvegarde automatique</b> — Chaque saisie ou modification est enregistrée immédiatement (indicateur "✓ enregistré" en haut de page).</div>
       <div class="principle"><b>Transactions modifiables</b> — Corrigez une transaction déjà enregistrée directement depuis le tableau (bouton "Modifier").</div>
@@ -1363,8 +1403,8 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     </div>
 
     <div class="card" style="margin-top:14px">
-      <div class="section-title" style="margin-top:0">🩺 Version 14 — Corrections issues de l'audit financier</div>
-      <div class="principle"><b>Réagencement des menus</b> — Dans ⚙️ Paramètres, réordonnez librement les 16 onglets de navigation avec les flèches ▲ ▼ (bouton de réinitialisation disponible).</div>
+      <div class="section-title" style="margin-top:0">🗂️ Historique · Version 14, corrections de l'audit financier</div>
+      <div class="principle"><b>Réagencement des menus</b> — Dans ⚙️ Paramètres, réordonnez les 17 écrans avec les flèches ▲ ▼, à l'intérieur de chacune des 4 sections (Suivi, Planifier, Patrimoine, Outils) ; bouton de réinitialisation disponible.</div>
       <div class="principle"><b>Nom d'utilisateur affiché</b> — Le nom renseigné dans ⚙️ Paramètres apparaît désormais à côté du titre de l'application.</div>
       <div class="principle"><b>Fonds d'urgence : source unique</b> — L'objectif de mois de couverture ne se règle plus que dans ⚙️ Paramètres ; le champ redondant et sans effet de l'onglet Alertes a été retiré pour éviter toute contradiction.</div>
       <div class="principle"><b>Projection Financière plus fidèle</b> — Le patrimoine net projeté reprend désormais le capital réellement restant dû (Crédit bancaire + Multi-Crédits) et ne le réduit que de la part "capital" de chaque mensualité (et non plus de la mensualité totale), pour une trajectoire plus réaliste. Les postes Besoins/Désirs suivent uniquement l'inflation, indépendamment de la croissance du revenu, pour ne plus cumuler deux effets de hausse.</div>
@@ -1374,15 +1414,15 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     </div>
 
     <div class="card" style="margin-top:14px">
-      <div class="section-title" style="margin-top:0">💾 Sauvegarde, persistance et multi-appareils</div>
-      <div class="principle"><b>Où sont mes données ?</b> — Enregistrées automatiquement dans <b>ce navigateur, sur cet appareil</b> (aucun cloud, aucun serveur). Fermez et rouvrez le fichier : tout est toujours là.</div>
-      <div class="principle"><b>Changer d'ordinateur ou de navigateur</b> — Les données étant propres à chaque navigateur, utilisez ⚙️ Paramètres → "💾 Sauvegarde & Synchronisation" : bouton "📤 Exporter mes données" pour télécharger un fichier, puis "📥 Importer une sauvegarde" sur l'autre appareil.</div>
-      <div class="principle"><b>Astuce de synchronisation</b> — Enregistrez vos exports dans un dossier Google Drive/Dropbox/OneDrive déjà synchronisé : il vous suffira d'un import en un clic sur chaque appareil pour retrouver vos dernières données.</div>
+      <div class="section-title" style="margin-top:0">💾 Sauvegarde, synchronisation et multi-appareils</div>
+      <div class="principle"><b>Où sont mes données ?</b> — Enregistrées automatiquement <b>sur cet appareil</b> (téléphone ou PC) à chaque saisie. Rien ne quitte l'appareil tant que la synchronisation n'est pas activée.</div>
+      <div class="principle"><b>☁️ Synchronisation entre appareils</b> — Dans ⚙️ Paramètres › Synchronisation : créez un compte (e-mail + mot de passe) et une <b>phrase secrète</b>. Les données sont chiffrées sur l'appareil avec cette phrase avant l'envoi : sans elle, personne ne peut les lire. Connectez chaque appareil (PC, téléphone, web) avec le même compte et la même phrase ; la synchronisation se fait à l'ouverture, après chaque saisie et avec le bouton Quitter. La phrase secrète <b>ne peut pas être récupérée</b> : notez-la en lieu sûr.</div>
+      <div class="principle"><b>Export / import JSON</b> — Copie de secours à faire de temps en temps ("📤 Exporter mes données"), ou transfert manuel sans synchronisation ("📥 Importer une sauvegarde" sur l'autre appareil).</div>
       <div class="principle"><b>⚠️ Prudence</b> — L'import remplace intégralement les données déjà présentes sur l'appareil. Une confirmation est demandée avant tout remplacement.</div>
     </div>
 
     <div class="card" style="margin-top:14px">
-      <div class="section-title" style="margin-top:0">🧹 Consolidation du référentiel (audit des catégories, 04/08/2026)</div>
+      <div class="section-title" style="margin-top:0">🗂️ Historique · Consolidation du référentiel (04/08/2026)</div>
       <p class="small-note" style="margin-top:0">Un audit dédié a passé en revue les 52 catégories pour repérer doublons et intitulés trop proches. 5 fusions et 1 renommage ont été validés et appliqués automatiquement (transactions, budgets et projets liés migrés sans perte de données) :</p>
       <div class="principle">"Mobilier" → fusionné dans <b>"Autre mobilier"</b></div>
       <div class="principle">"Équipement" → fusionné dans <b>"Autre équipement"</b></div>
@@ -1427,7 +1467,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v38 · 11 nov. 2026';
+const APP_VERSION = 'v39 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -1815,7 +1855,23 @@ function requireUnlock(){
       if(entered.length===targetLen){ tryUnlock(); }
     }
     pad.addEventListener('click', onKey);
+    // Code oublié ? (v39, option 1) : effacement des données de cet appareil après confirmation « EFFACER »
+    const forgot = document.getElementById('pinForgot'), wipe = document.getElementById('pinWipe'), conf = document.getElementById('pinWipeConfirm'), go = document.getElementById('pinWipeGo');
+    if(forgot && !forgot.dataset.armed){
+      forgot.dataset.armed = '1';
+      forgot.addEventListener('click', ()=>{ wipe.hidden = false; conf.value = ''; go.disabled = true; conf.focus(); });
+      document.getElementById('pinWipeCancel').addEventListener('click', ()=>{ wipe.hidden = true; });
+      conf.addEventListener('input', ()=>{ go.disabled = conf.value.trim().toUpperCase() !== 'EFFACER'; });
+      go.addEventListener('click', ()=>{ if(conf.value.trim().toUpperCase()!=='EFFACER') return; wipeThisDevice(); });
+    }
   });
+}
+async function wipeThisDevice(){
+  // Supprime toutes les données de l'application sur cet appareil (données, sauvegardes locales, compte et clés de synchronisation). Le thème est conservé.
+  try{ if(typeof SYNC!=='undefined' && SYNC.disconnect) await SYNC.disconnect(true); }catch(e){}
+  try{ Object.keys(localStorage).filter(k=>k.startsWith('finances_perso_xof_v14__')).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  location.reload();
 }
 function devise(){ return String((state.settings&&state.settings.devise)||'FCFA').replace(/[<>&"'`]/g,'').slice(0,12)||'FCFA'; }
 function updateCurrencyLabels(){
@@ -1829,6 +1885,8 @@ function updateHeaderRule(){
   const d = Math.round(getGroupTarget('DESIRS')*100);
   const i = Math.round(getGroupTarget('INVEST')*100);
   el.innerHTML = `Règle <b>${b}</b> Besoins · <b>${e}</b> Épargne · <b>${d}</b> Désirs · <b>${i}</b> Invest. — <span class="cur-label">${devise()}</span>`;
+  const set = (cls, v)=>document.querySelectorAll('.'+cls).forEach(x=>{ x.textContent = v; });
+  set('rule-b', b); set('rule-e', e); set('rule-d', d); set('rule-i', i); set('rule-txt', `${b} / ${e} / ${d} / ${i}`);
 }
 function catType(cat){ const f=getAllCategories().find(c=>c[0]===cat); return f?f[1]:'BESOINS'; }
 function yearsInUse(){
