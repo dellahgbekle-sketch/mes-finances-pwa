@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="mf-build" content="32000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-Tbrs/jZLxZZJNafVMdQRuNlRmtn6uwKmJO0d3/XXY/U='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta name="mf-build" content="33000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-3sU+4zkwBKIAmkak/xH8ukfLHbvJlza4oiFAJK8gwRA='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <script>(function(){var d=document.documentElement;try{var p=localStorage.getItem('mf-theme')||'sahara';var ok={sahara:1,emeraude:1,nuit:1,ocean:1,violet:1};var t=p==='auto'?((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'nuit':'sahara'):(ok[p]?p:'sahara');d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','sahara');}})();</script>
 <style>
@@ -359,6 +359,59 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   .block-card.open{grid-column:1/-1}
   .charts-row{margin-top:12px}
 }
+
+/* ===================== v33 : tableaux en cartes sur mobile (P3a) ===================== */
+.mini-bar{display:none}
+@media(max-width:700px){
+  table.cards thead{display:none}
+  table.cards,table.cards tbody{display:block;width:100%}
+  .tbl-wrap:has(>table.cards){border:none;background:transparent;overflow:visible;max-height:none}
+  table.cards tr{display:grid;gap:4px 10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  table.cards td{display:block;padding:0;border:none;min-width:0;overflow-wrap:anywhere}
+  table.cards td[colspan]{grid-column:1/-1}
+  table.cards td::before{color:var(--ink-soft);font-size:12px;font-weight:600}
+  /* --- Transactions : Date, Description, Catégorie, Type, Montant, Mode, Référence, Actions --- */
+  table.cards-tx tr{grid-template-columns:auto 1fr auto;grid-template-areas:"desc desc montant" "date cat type" "mode ref ref" "act act act"}
+  table.cards-tx td:nth-child(1){grid-area:date;font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  table.cards-tx td:nth-child(2){grid-area:desc;font-weight:700;font-size:15px}
+  table.cards-tx td:nth-child(3){grid-area:cat;font-size:12px;color:var(--ink-soft)}
+  table.cards-tx td:nth-child(4){grid-area:type}
+  table.cards-tx td:nth-child(5){grid-area:montant;font-weight:700;font-size:16px;font-family:var(--mono);white-space:nowrap;text-align:right}
+  table.cards-tx td:nth-child(6){grid-area:mode;font-size:12px;color:var(--ink-soft)}
+  table.cards-tx td:nth-child(7){grid-area:ref;font-size:12px;color:var(--ink-soft)}
+  table.cards-tx td:nth-child(6):not(:empty)::before{content:"Mode : "}
+  table.cards-tx td:nth-child(7):not(:empty)::before{content:"Réf. : "}
+  table.cards-tx td:nth-child(8){grid-area:act;display:flex;gap:8px;justify-content:flex-end;margin-top:4px;white-space:normal!important}
+  table.cards-tx td:nth-child(8) .btn{min-height:44px;padding:0 18px}
+  /* --- Budget : Poste, Budget/mois, Réalisé, Écart, % Réalisé, Statut --- */
+  table.cards-budget tr{grid-template-columns:1fr 1fr auto;grid-template-areas:"poste poste statut" "budget budget budget" "real ecart pct"}
+  table.cards-budget td:nth-child(1){grid-area:poste;font-weight:700;font-size:15px}
+  table.cards-budget td:nth-child(2){grid-area:budget;display:flex;align-items:center;gap:8px;margin:4px 0}
+  table.cards-budget td:nth-child(2)::before{content:"Budget / mois";flex:none;font-family:var(--sans)}
+  table.cards-budget td:nth-child(2) input{flex:1;width:auto!important;min-width:0}
+  table.cards-budget td:nth-child(3){grid-area:real;font-family:var(--mono);white-space:nowrap;text-align:left}
+  table.cards-budget td:nth-child(3)::before{content:"Réalisé ";display:block;font-family:var(--sans)}
+  table.cards-budget td:nth-child(4){grid-area:ecart;font-family:var(--mono);white-space:nowrap;text-align:left}
+  table.cards-budget td:nth-child(4)::before{content:"Écart ";display:block;font-family:var(--sans);color:var(--ink-soft)}
+  table.cards-budget td:nth-child(5){grid-area:pct;font-family:var(--mono);font-weight:700;text-align:right}
+  table.cards-budget td:nth-child(5) .mini-bar{display:block;height:6px;border-radius:3px;background:var(--line);margin-top:4px;min-width:72px;overflow:hidden}
+  table.cards-budget td:nth-child(5) .mini-bar i{display:block;height:100%;background:var(--success);border-radius:3px}
+  table.cards-budget td:nth-child(6){grid-area:statut;font-size:12px;white-space:nowrap}
+  /* --- Alertes : #, Indicateur, Valeur, Seuil, Statut, Priorité, Recommandation --- */
+  table.cards-alert tr{grid-template-columns:1fr 1fr auto;grid-template-areas:"label label statut" "val seuil prio" "reco reco reco";border-left-width:5px}
+  table.cards-alert tr:has(.badge.bad){border-left-color:var(--danger)}
+  table.cards-alert tr:has(.badge.warn){border-left-color:var(--warn)}
+  table.cards-alert tr:has(.badge.ok){border-left-color:var(--success)}
+  table.cards-alert td:nth-child(1){display:none}
+  table.cards-alert td:nth-child(2){grid-area:label;font-weight:700;font-size:14px}
+  table.cards-alert td:nth-child(3){grid-area:val;font-family:var(--mono);font-weight:700}
+  table.cards-alert td:nth-child(3)::before{content:"Valeur ";display:block;font-family:var(--sans);font-weight:600}
+  table.cards-alert td:nth-child(4){grid-area:seuil;font-family:var(--mono)}
+  table.cards-alert td:nth-child(4)::before{content:"Seuil ";display:block;font-family:var(--sans)}
+  table.cards-alert td:nth-child(5){grid-area:statut;text-align:right}
+  table.cards-alert td:nth-child(6){grid-area:prio;text-align:right;font-size:12px;align-self:end}
+  table.cards-alert td:nth-child(7){grid-area:reco;font-size:12.5px!important;color:var(--ink-soft);margin-top:4px}
+}
 </style>
 
 </head>
@@ -608,7 +661,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
       </select>
     </div>
     <div class="tbl-wrap scroll-y">
-      <table>
+      <table class="cards cards-tx">
         <thead><tr>
           <th>Date</th><th>Description</th><th>Catégorie</th><th>Type</th><th class="num">Montant</th><th>Mode</th><th>Référence</th><th></th>
         </tr></thead>
@@ -918,7 +971,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   <section class="panel" id="panel-alertes">
     <p class="small-note">Indicateurs recalculés automatiquement selon la période sélectionnée en haut de page.</p>
     <div class="tbl-wrap">
-      <table>
+      <table class="cards cards-alert">
         <thead><tr><th>#</th><th>Indicateur</th><th class="num">Valeur</th><th class="num">Seuil cible</th><th>Statut</th><th>Priorité</th><th>Recommandation</th></tr></thead>
         <tbody id="alertesBody"></tbody>
       </table>
@@ -1125,7 +1178,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v32 · 11 nov. 2026';
+const APP_VERSION = 'v33 · 11 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -2319,7 +2372,7 @@ function renderBudget(){
         <td class="num"><input type="number" data-cat="${escapeHtml(name)}" value="${prevuMensuel}" style="width:100px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-family:var(--mono)"></td>
         <td class="num">${fmt(real)}</td>
         <td class="num" style="color:${ecart<0?'var(--danger)':'var(--success)'}">${fmt(ecart)}</td>
-        <td class="num">${prevu>0?pct(consomme):'—'}</td>
+        <td class="num">${prevu>0?pct(consomme):'—'}<span class="mini-bar" aria-hidden="true"><i style="width:${Math.min(consomme*100,100).toFixed(1)}%${consomme>1?';background:var(--danger)':''}"></i></span></td>
         <td>${status}</td>
       </tr>`;
     }).join('');
@@ -2330,7 +2383,7 @@ function renderBudget(){
       ? `<span class="badge warn" style="margin-left:10px" title="Ceci est informatif uniquement — vous pouvez continuer à modifier vos budgets librement">⚠️ Budget prévu à ${pct(partPrevu)} du revenu, au-delà de la règle des ${Math.round(targetPct*100)}%</span>`
       : '';
     return `<div class="section-title">${GROUP_LABEL[type]} — Total prévu ${fmt(totalPrevu)} · Réalisé ${fmt(totalReal)}${warningBadge}</div>
-      <div class="tbl-wrap"><table>
+      <div class="tbl-wrap"><table class="cards cards-budget">
         <thead><tr><th>Poste</th><th class="num">Budget/mois (<span class="cur-label">FCFA</span>)</th><th class="num">Réalisé période</th><th class="num">Écart</th><th class="num">% Réalisé</th><th>Statut</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
