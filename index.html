@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="mf-build" content="39000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-mes1M7mgk+GVnINJDQAXFFxKQK4FWbK82GnFzTYy3vI='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
+<meta name="mf-build" content="40000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-SmJ/aIPaJ8ZD1xeVO1Z2eT0taN9SbznyvOa2Hl/M/uI='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none';">
 <script src="./vendor/chart.umd.min.js"></script>
 <script>(function(){var d=document.documentElement;try{var p=localStorage.getItem('mf-theme')||'sahara';var ok={sahara:1,emeraude:1,nuit:1,ocean:1,violet:1};var t=p==='auto'?((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'nuit':'sahara'):(ok[p]?p:'sahara');d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','sahara');}})();</script>
 <style>
@@ -507,6 +507,20 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
 .obj-ring .n{font-size:12.5px;font-weight:700;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .obj-ring .r{font-size:12px;color:var(--ink-soft);font-family:var(--mono)}
 
+/* ===================== v40 : pastilles groupées (saisie rapide), icône Quitter SVG ===================== */
+.ico-power{vertical-align:-3px}
+.sheet .sel-native{display:none}
+.sheet .more-btn{min-height:44px;padding:0 14px;border-radius:999px;border:1px dashed var(--line);background:transparent;color:var(--primary);font-size:14px;font-weight:600;cursor:pointer}
+.sheet .picker{display:none;margin-top:10px;max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:8px 10px 10px;background:var(--bg)}
+.sheet .picker.on{display:block}
+.sheet .picker .grp{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:10px 0 6px}
+.sheet .picker .grp:first-child{margin-top:2px}
+.sheet .picker .chips{gap:6px}
+.sheet .picker .chip{background:var(--surface);min-height:44px;font-size:13.5px;font-weight:500}
+.sheet .picker .chip.sel{background:var(--primary);color:var(--on-primary,#fff)}
+.sheet .picked{font-size:13px;color:var(--ink-soft);margin-top:6px;min-height:18px}
+.sheet .picked b{color:var(--ink)}
+
 /* ===================== v37 : Objectifs, Récurrences, Maintenance en cartes (mobile) ===================== */
 @media(max-width:700px){
   table.cards td::before{display:block;font-family:var(--sans);margin-bottom:2px}
@@ -688,7 +702,9 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   <div class="amt"><input type="number" inputmode="numeric" min="0" step="1" id="qaMontant" placeholder="0" aria-label="Montant"><b class="cur-label">FCFA</b></div>
   <div class="lab">Catégorie</div>
   <div class="chips" id="qaChips"></div>
-  <select id="qaCategorie" aria-label="Catégorie" style="margin-top:8px"></select>
+  <div class="picker" id="qaPicker" role="listbox" aria-label="Toutes les catégories"></div>
+  <div class="picked" id="qaPicked"></div>
+  <select id="qaCategorie" class="sel-native" aria-hidden="true" tabindex="-1"></select>
   <div class="lab">Description (optionnel)</div>
   <input type="text" id="qaDescription" placeholder="Ex : Marché du samedi">
   <div class="row2" style="margin-top:10px">
@@ -704,7 +720,8 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   <div class="amt"><input type="number" inputmode="numeric" min="0" step="1" id="qrMontant" placeholder="0" aria-label="Montant"><b class="cur-label">FCFA</b></div>
   <div class="lab">Source</div>
   <div class="chips" id="qrChips"></div>
-  <select id="qrSource" aria-label="Source" style="margin-top:8px"></select>
+  <div class="picker" id="qrPicker" role="listbox" aria-label="Toutes les sources"></div>
+  <select id="qrSource" class="sel-native" aria-hidden="true" tabindex="-1"></select>
   <div class="row2" style="margin-top:10px">
     <div><div class="lab" style="margin-top:0">Mois</div><select id="qrMois" aria-label="Mois"></select></div>
     <div><div class="lab" style="margin-top:0">Année</div><select id="qrAnnee" aria-label="Année"></select></div>
@@ -726,7 +743,7 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
     </select>
     <span class="save-msg" id="saveMsg">✓ enregistré</span>
     <span id="syncBadge" style="display:none;font-size:12px;font-weight:700;cursor:default"></span>
-    <span style="margin-left:auto;display:flex;gap:6px"><button class="btn secondary small" id="lockNowBtn" title="Verrouiller avec le code PIN" aria-label="Verrouiller avec le code PIN">🔒<span class="lbl"> Verrouiller</span></button><button class="btn secondary small" id="quitBtn" title="Fermer l'application" aria-label="Fermer l'application" style="display:none">⏻<span class="lbl"> Quitter</span></button></span>
+    <span style="margin-left:auto;display:flex;gap:6px"><button class="btn secondary small" id="lockNowBtn" title="Verrouiller avec le code PIN" aria-label="Verrouiller avec le code PIN">🔒<span class="lbl"> Verrouiller</span></button><button class="btn secondary small" id="quitBtn" title="Fermer l'application" aria-label="Fermer l'application" style="display:none"><svg class="ico-power" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg><span class="lbl"> Quitter</span></button></span>
   </div>
 
   <!-- DASHBOARD -->
@@ -1297,14 +1314,14 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
       <div class="principle"><b>Saisir vite avec le bouton "+"</b> — Il demande d'abord <b>Dépense</b> ou <b>Revenu</b>. Dépense : montant, catégorie (vos 4 plus fréquentes en pastilles), date du jour, mode de paiement ; c'est le même enregistrement que le formulaire de Transactions. Revenu : montant, source, mois ; le montant <b>s'ajoute</b> à la case source / mois de l'onglet Revenus, et la valeur déjà saisie est affichée pour éviter les doublons. Le bouton s'efface quand vous faites défiler ou saisissez un champ.</div>
       <div class="principle"><b>Lire les tableaux</b> — Sur téléphone, les tableaux sont présentés en cartes (une ligne = une carte) avec les mêmes boutons. Les grilles mois par mois (Revenus, Crédit, Projection, Suivi annuel) gardent la première colonne fixe : faites défiler vers la droite pour voir les mois.</div>
       <div class="principle"><b>Tableau de bord</b> — "Reste à vivre" = revenus − dépenses de la période choisie, avec la part du budget utilisée et le taux d'épargne ; les 4 blocs se déplient d'un toucher ; la barre "Où va l'argent" montre la part réalisée de chaque bloc et les repères ▼ de votre règle.</div>
-      <div class="principle"><b>Verrouiller / Quitter</b> — 🔒 verrouille immédiatement (code PIN). ⏻ Quitter enregistre, synchronise si activé, puis verrouille : fermez ensuite l'application depuis les applications récentes (Android n'autorise pas une application web à se fermer seule).</div>
+      <div class="principle"><b>Verrouiller / Quitter</b> — 🔒 verrouille immédiatement (code PIN). Le bouton marche/arrêt « Quitter » enregistre, synchronise si activé, puis verrouille : fermez ensuite l'application depuis les applications récentes (Android n'autorise pas une application web à se fermer seule).</div>
       <div class="principle"><b>Pages longues</b> — Dans Paramètres et ce Guide, touchez un titre pour ouvrir sa section.</div>
     </div>
 
     <div class="card" style="margin-top:14px">
       <div class="section-title" style="margin-top:0">🖥️ Sur Windows (application .exe)</div>
       <div class="principle"><b>Mise à jour automatique</b> — À chaque lancement, l'application vérifie s'il existe une version plus récente et l'installe (connexion nécessaire ; sans connexion, la version présente s'ouvre). Le numéro de version est visible dans ⚙️ Paramètres › À propos.</div>
-      <div class="principle"><b>Quitter</b> — ⏻ enregistre, synchronise si activé, puis ferme la fenêtre. Fermer la fenêtre avec la croix enregistre aussi (sauvegarde à chaque saisie).</div>
+      <div class="principle"><b>Quitter</b> — Le bouton marche/arrêt enregistre, synchronise si activé, puis ferme la fenêtre. Fermer la fenêtre avec la croix enregistre aussi (sauvegarde à chaque saisie).</div>
       <div class="principle"><b>Mêmes données que le téléphone</b> — Activez la synchronisation sur les deux appareils avec le même compte et la même phrase secrète (voir "💾 Sauvegarde, synchronisation et multi-appareils").</div>
     </div>
 
@@ -1467,7 +1484,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v39 · 11 nov. 2026';
+const APP_VERSION = 'v40 · 12 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -2095,15 +2112,28 @@ const QA = (function(){
     const freq = Object.keys(tot).filter(s=>REVENU_SOURCES.includes(s)).sort((a,b)=>tot[b]-tot[a]).slice(0,n);
     return freq.length ? freq : REVENU_SOURCES.slice(0,n);
   }
-  function chips(container, items, select, onPick){
-    container.innerHTML = items.map(v=>`<button type="button" class="chip${select.value===v?' sel':''}" data-v="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('');
-    container.querySelectorAll('.chip').forEach(b=>b.addEventListener('click', ()=>{ select.value = b.dataset.v; syncChips(container, select); onPick && onPick(); }));
+  function chips(container, items, select, onPick, picker){
+    container.innerHTML = items.map(v=>`<button type="button" class="chip${select.value===v?' sel':''}" data-v="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')
+      + (picker ? `<button type="button" class="more-btn" aria-expanded="false">Autres…</button>` : '');
+    container.querySelectorAll('.chip').forEach(b=>b.addEventListener('click', ()=>{ select.value = b.dataset.v; syncAll(select); if(picker) picker.classList.remove('on'); onPick && onPick(); }));
+    const mb = container.querySelector('.more-btn');
+    if(mb) mb.addEventListener('click', ()=>{ const o = picker.classList.toggle('on'); mb.setAttribute('aria-expanded', o?'true':'false'); mb.textContent = o ? 'Réduire' : 'Autres…'; if(o){ const s = picker.querySelector('.chip.sel'); if(s) s.scrollIntoView({block:'nearest'}); } });
   }
   function syncChips(container, select){ container.querySelectorAll('.chip').forEach(b=>b.classList.toggle('sel', b.dataset.v===select.value)); }
+  function syncAll(select){ document.querySelectorAll('#'+select.id.replace('Categorie','').replace('Source','')+'Chips, #'+select.id.replace('Categorie','').replace('Source','')+'Picker').forEach(c=>syncChips(c, select)); const p = $('qaPicked'); if(select.id==='qaCategorie' && p){ const c = getAllCategories().find(x=>x[0]===select.value); p.innerHTML = c ? `Catégorie : <b>${escapeHtml(c[0])}</b> · ${GROUP_LABEL[c[1]]||c[1]}` : ''; } }
+  // Sélecteur complet, groupé par bloc (catégories) ou simple liste (sources), en pastilles dans la feuille : pas de liste native Android
+  function buildPicker(picker, groups, select, onPick){
+    picker.innerHTML = groups.map(g=>`<div class="grp">${g.label}</div><div class="chips">${g.items.map(v=>`<button type="button" class="chip${select.value===v?' sel':''}" role="option" aria-selected="${select.value===v}" data-v="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div>`).join('');
+    picker.querySelectorAll('.chip').forEach(b=>b.addEventListener('click', ()=>{ select.value = b.dataset.v; syncAll(select); picker.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-selected', x.dataset.v===select.value)); onPick && onPick(); }));
+  }
   function openDep(){
     const sel = $('qaCategorie'); sel.innerHTML = getAllCategories().map(c=>`<option value="${escapeHtml(c[0])}">${escapeHtml(c[0])} (${c[1]})</option>`).join('');
-    const fc = frequentCats(4); sel.value = fc[0]; chips($('qaChips'), fc, sel);
-    sel.onchange = ()=>syncChips($('qaChips'), sel);
+    const fc = frequentCats(4); sel.value = fc[0];
+    const order = ['BESOINS','EPARGNE','DESIRS','INVEST'];
+    const groups = order.map(t=>({label: GROUP_LABEL[t], items: getAllCategories().filter(c=>c[1]===t).map(c=>c[0])})).filter(g=>g.items.length);
+    const other = getAllCategories().filter(c=>!order.includes(c[1])).map(c=>c[0]); if(other.length) groups.push({label:'Autres', items: other});
+    buildPicker($('qaPicker'), groups, sel); $('qaPicker').classList.remove('on');
+    chips($('qaChips'), fc, sel, null, $('qaPicker')); syncAll(sel);
     $('qaMontant').value = ''; $('qaDescription').value = ''; $('qaDate').value = localISO(); $('qaMode').value = lastMode; $('qaDepErr').textContent = '';
     open('sheetDep'); setTimeout(()=>$('qaMontant').focus(), 80);
   }
@@ -2117,7 +2147,9 @@ const QA = (function(){
   function openRev(){
     const now = new Date(), y = now.getFullYear();
     const sel = $('qrSource'); sel.innerHTML = REVENU_SOURCES.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-    const fs = frequentSources(4); sel.value = fs[0]; chips($('qrChips'), fs, sel, updateRevHint); sel.onchange = ()=>{ syncChips($('qrChips'), sel); updateRevHint(); };
+    const fs = frequentSources(4); sel.value = fs[0];
+    buildPicker($('qrPicker'), [{label:'Toutes les sources', items: REVENU_SOURCES.slice()}], sel, updateRevHint); $('qrPicker').classList.remove('on');
+    chips($('qrChips'), fs, sel, updateRevHint, REVENU_SOURCES.length>4 ? $('qrPicker') : null); syncAll(sel);
     $('qrMois').innerHTML = MOIS_LABELS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join(''); $('qrMois').value = String(now.getMonth()+1);
     const years = new Set([y-1, y, y+1]); Object.keys(state.revenus||{}).forEach(k=>years.add(Number(k.slice(0,4))));
     $('qrAnnee').innerHTML = [...years].filter(v=>v>2000).sort().map(v=>`<option>${v}</option>`).join(''); $('qrAnnee').value = String(y);
@@ -4343,7 +4375,7 @@ const SYNC = (function(){
     if(!confirm('Quitter Mes Finances ?')) return;
     const ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;z-index:20000;background:var(--primary-dark,#1c3d33);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;text-align:center;padding:24px';
-    ov.textContent = '⏻ Fermeture en cours…'; document.body.appendChild(ov);
+    ov.textContent = 'Fermeture en cours…'; document.body.appendChild(ov);
     try{
       await persist(true);
       if(typeof SYNC!=='undefined' && SYNC.meta && SYNC.meta.enabled && navigator.onLine!==false){
@@ -4353,7 +4385,7 @@ const SYNC = (function(){
         while(SYNC.busy && Date.now() < limit) await new Promise(r=>setTimeout(r,100));
       }
     }catch(e){ console.warn('fermeture', e); }
-    ov.textContent = '⏻ Fermeture en cours…';
+    ov.textContent = 'Fermeture en cours…';
     if(isLauncher){ window.close(); setTimeout(()=>{ ov.textContent = '✅ Application fermée. Vous pouvez fermer cette fenêtre.'; }, 600); return; }
     const hasPin = !!(state.settings && state.settings.pinHash);
     ov.innerHTML = '<div><div style="font-size:40px;margin-bottom:12px">✅</div><div>Données enregistrées' + ((typeof SYNC!=='undefined' && SYNC.meta && SYNC.meta.enabled) ? ' et synchronisées' : '') + '.</div><div style="font-size:14px;opacity:.85;margin-top:10px">Vous pouvez fermer l\'application depuis les applications récentes.' + (hasPin ? ' Elle est verrouillée.' : '') + '</div><button type="button" id="quitBack" class="btn" style="margin-top:22px;background:#fff;color:var(--primary-dark,#1c3d33);min-height:48px;padding:0 22px">Revenir à l\'application</button></div>';
