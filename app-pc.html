@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mes Finances">
-<meta name="mf-build" content="40000">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-3HBvdNDsPK+DznadEzPazqsWlra/0gwkKDZHVnD9/vI='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="mf-build" content="41000">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qK6KkseIUcnRC+kUy9abFHJsP6H20WlSPbooFQhKVDs=' 'sha256-7xzU6c5wGz8Wm9JRfGL5FgW+50ng28Uktsz0sJ7QriQ=' 'sha256-jpgEWBk9JZoeHRnncv5EMLaAicU35GNps7Y4v8SxnRM='; style-src 'unsafe-inline'; img-src data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script>/*!
  * Chart.js v4.4.0
  * https://www.chartjs.org
@@ -531,6 +531,29 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
 .sheet .picked{font-size:13px;color:var(--ink-soft);margin-top:6px;min-height:18px}
 .sheet .picked b{color:var(--ink)}
 
+/* ===================== v41 : feuille de choix pour les listes (mobile), mode de paiement en pastilles ===================== */
+#selSheetBg{position:fixed;inset:0;background:rgba(20,12,6,.5);z-index:10010;display:none}
+#selSheetBg.on{display:block}
+#selSheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:8px 0 calc(10px + env(safe-area-inset-bottom));z-index:10011;box-shadow:0 -8px 24px rgba(0,0,0,.25);max-height:86vh;display:none;flex-direction:column;box-sizing:border-box}
+#selSheet.on{display:flex}
+#selSheet .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 10px;flex:none}
+#selSheet h3{font-family:var(--serif);font-size:17px;margin:0 16px 8px;text-align:center;flex:none}
+#selSheet .srch{margin:0 16px 8px;flex:none}
+#selSheet .srch input{width:100%;box-sizing:border-box;min-height:46px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font-size:15px;background:var(--bg);color:var(--ink)}
+#selSheet .lst{overflow:auto;flex:1 1 auto;padding:0 10px}
+#selSheet .grp{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:12px 8px 4px}
+#selSheet .opt{display:flex;align-items:center;gap:12px;width:100%;min-height:52px!important;padding:8px 10px;border:none;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font-size:15.5px;text-align:left;cursor:pointer;border-radius:10px}
+#selSheet .opt .t{flex:1;min-width:0;overflow-wrap:anywhere}
+#selSheet .opt .s{font-size:12px;color:var(--ink-soft);margin-left:8px;white-space:nowrap}
+#selSheet .opt .ck{width:22px;height:22px;border-radius:11px;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;color:var(--on-primary,#fff)}
+#selSheet .opt.sel{background:var(--bg);font-weight:700}
+#selSheet .opt.sel .ck{background:var(--primary);border-color:var(--primary)}
+#selSheet .opt.sel .ck::after{content:"";width:6px;height:11px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:translateY(-1px) rotate(45deg)}
+#selSheet .close{margin:10px 16px 0;min-height:48px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:700;font-size:15px;flex:none;cursor:pointer}
+@media(max-width:700px){
+  select:not(.sel-native){appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-soft) 50%),linear-gradient(135deg,var(--ink-soft) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px!important;cursor:pointer}
+}
+
 /* ===================== v37 : Objectifs, Récurrences, Maintenance en cartes (mobile) ===================== */
 @media(max-width:700px){
   table.cards td::before{display:block;font-family:var(--sans);margin-bottom:2px}
@@ -698,6 +721,14 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
 </header>
 <button id="fabAdd" type="button" aria-label="Nouvelle saisie" title="Nouvelle saisie">+</button>
 <div class="sheet-bg" id="sheetBg"></div>
+<div id="selSheetBg"></div>
+<div id="selSheet" role="dialog" aria-modal="true" aria-labelledby="selSheetTitle">
+  <div class="grip"></div>
+  <h3 id="selSheetTitle">Choisir</h3>
+  <div class="srch" id="selSheetSearch" hidden><input type="search" id="selSheetQ" placeholder="Rechercher…" aria-label="Rechercher" autocomplete="off"></div>
+  <div class="lst" id="selSheetList" role="listbox"></div>
+  <button type="button" class="close" id="selSheetClose">Fermer</button>
+</div>
 <div class="sheet" id="sheetChoice" role="dialog" aria-modal="true" aria-labelledby="sheetChoiceTitle">
   <div class="grip"></div>
   <h3 id="sheetChoiceTitle">Que voulez-vous saisir ?</h3>
@@ -717,10 +748,11 @@ body.fab-hide #fabAdd{transform:translateY(90px) scale(.6);opacity:0;pointer-eve
   <select id="qaCategorie" class="sel-native" aria-hidden="true" tabindex="-1"></select>
   <div class="lab">Description (optionnel)</div>
   <input type="text" id="qaDescription" placeholder="Ex : Marché du samedi">
-  <div class="row2" style="margin-top:10px">
-    <div><div class="lab" style="margin-top:0">Date</div><input type="date" id="qaDate" aria-label="Date"></div>
-    <div><div class="lab" style="margin-top:0">Mode</div><select id="qaMode" aria-label="Mode de paiement"><option>Espèces</option><option>Virement</option><option>Mobile Money</option><option>CB</option><option>Chèque</option><option>Autre</option></select></div>
-  </div>
+  <div class="lab">Date</div>
+  <input type="date" id="qaDate" aria-label="Date">
+  <div class="lab">Mode de paiement</div>
+  <div class="chips" id="qaModeChips"></div>
+  <select id="qaMode" class="sel-native" aria-hidden="true" tabindex="-1"><option>Espèces</option><option>Virement</option><option>Mobile Money</option><option>CB</option><option>Chèque</option><option>Autre</option></select>
   <div class="err" id="qaDepErr"></div>
   <div class="act"><button type="button" class="btn secondary" id="qaDepCancel">Annuler</button><button type="button" class="btn" id="qaDepSave">Enregistrer</button></div>
 </div>
@@ -1494,7 +1526,7 @@ if (!window.storage) {
 }
 
 /* ======================= REFERENTIEL ======================= */
-const APP_VERSION = 'v40 · 12 nov. 2026';
+const APP_VERSION = 'v41 · 12 nov. 2026';
 const CATEGORIES = [
   ["Logement","BESOINS"],["Alimentation","BESOINS"],["Transport","BESOINS"],["Électricité/Eau","BESOINS"],
   ["Internet/Téléphone","BESOINS"],["Assurance","BESOINS"],["Santé","BESOINS"],["Vêtements essentiels","BESOINS"],
@@ -2104,6 +2136,68 @@ document.getElementById('groups').addEventListener('click',e=>{
     blocks.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('block-card')){ e.preventDefault(); tog(e.target); } });
   }
 })();
+/* ======================= FEUILLE DE CHOIX POUR LES LISTES (v41, mobile) ======================= */
+const SELSHEET = (function(){
+  const mq = window.matchMedia('(max-width:700px)');
+  const bg = document.getElementById('selSheetBg'), sh = document.getElementById('selSheet'), title = document.getElementById('selSheetTitle'),
+        srch = document.getElementById('selSheetSearch'), q = document.getElementById('selSheetQ'), lst = document.getElementById('selSheetList');
+  let cur = null, lastOpen = 0;
+  function labelFor(s){
+    if(s.getAttribute('aria-label')) return s.getAttribute('aria-label');
+    if(s.id){ const l = document.querySelector(`label[for="${s.id}"]`); if(l) return l.textContent.trim(); }
+    const wrap = s.closest('.field, div, td, label'); if(wrap){ const l = wrap.querySelector('label, .lab'); if(l && l.textContent.trim()) return l.textContent.trim(); }
+    if(s.closest('td')){ const tr = s.closest('tr'), tbl = s.closest('table'); const idx = [...tr.children].indexOf(s.closest('td')); const th = tbl && tbl.querySelectorAll('thead th')[idx]; if(th) return th.textContent.trim(); }
+    return s.title || 'Choisir';
+  }
+  function groupsOf(s){
+    const og = [...s.querySelectorAll('optgroup')];
+    if(og.length) return og.map(g=>({label:g.label, opts:[...g.querySelectorAll('option')]}));
+    const opts = [...s.options];
+    // Listes de catégories (valeurs connues du référentiel, ou texte « Nom (BLOC) ») : regroupement par bloc quand la liste est longue
+    const cats = (typeof getAllCategories==='function') ? new Map(getAllCategories()) : new Map();
+    const m = opts.map(o=>o.textContent.match(/^(.*)\s\(([A-ZÉÈ_]+)\)\s*$/));
+    const byRef = opts.length>=10 && opts.filter(o=>cats.has(o.value)).length>=opts.length*0.8;
+    if(byRef || (opts.length>=10 && m.filter(Boolean).length>=opts.length*0.8)){
+      const order = ['BESOINS','EPARGNE','DESIRS','INVEST','REVENU']; const by = {};
+      opts.forEach((o,i)=>{ const k = byRef ? (cats.get(o.value)||'AUTRES') : (m[i] ? m[i][2] : 'AUTRES'); (by[k] = by[k]||[]).push(o); });
+      return Object.keys(by).sort((a,b)=>(order.indexOf(a)+99)%99-(order.indexOf(b)+99)%99).map(k=>({label:(typeof GROUP_LABEL!=='undefined' && GROUP_LABEL[k]) || (k==='REVENU'?'💰 Revenu':k), opts:by[k], strip:true}));
+    }
+    return [{label:'', opts}];
+  }
+  function render(filter){
+    const f = (filter||'').trim().toLowerCase(); let html = '';
+    groupsOf(cur).forEach(g=>{
+      const items = g.opts.filter(o=>!o.disabled && !o.hidden && (!f || o.textContent.toLowerCase().includes(f)));
+      if(!items.length) return;
+      if(g.label) html += `<div class="grp">${escapeHtml(g.label)}</div>`;
+      items.forEach(o=>{ const t = g.strip ? o.textContent.replace(/\s\([A-ZÉÈ_]+\)\s*$/,'') : o.textContent; html += `<button type="button" class="opt${o.selected?' sel':''}" role="option" aria-selected="${o.selected}" data-v="${escapeHtml(o.value)}"><span class="ck" aria-hidden="true"></span><span class="t">${escapeHtml(t)}</span></button>`; });
+    });
+    lst.innerHTML = html || '<div class="empty">Aucun choix ne correspond.</div>';
+    lst.querySelectorAll('.opt').forEach(b=>b.addEventListener('click', ()=>pick(b.dataset.v)));
+  }
+  function pick(v){
+    if(!cur) return; const s = cur, changed = s.value !== v; s.value = v;
+    close();
+    if(changed){ s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); }
+  }
+  function open(s){
+    const now = Date.now(); if(now-lastOpen<400 && cur===s) return; lastOpen = now; cur = s;
+    title.textContent = labelFor(s); const many = s.options.length>15; srch.hidden = !many; q.value = '';
+    render(''); bg.classList.add('on'); sh.classList.add('on');
+    const sel = lst.querySelector('.opt.sel'); if(sel) sel.scrollIntoView({block:'center'});
+    if(many) setTimeout(()=>q.focus(), 60);
+  }
+  function close(){ bg.classList.remove('on'); sh.classList.remove('on'); const s = cur; cur = null; if(s) try{ s.focus({preventScroll:true}); s.blur(); }catch(e){} }
+  function eligible(e){ const s = e.target && e.target.closest ? e.target.closest('select') : null; return (s && mq.matches && !s.disabled && !s.multiple && !s.classList.contains('sel-native')) ? s : null; }
+  // Empêche l'ouverture de la liste native (souris : mousedown ; tactile : touchend) et ouvre la feuille
+  document.addEventListener('mousedown', e=>{ const s = eligible(e); if(s){ e.preventDefault(); open(s); } }, true);
+  document.addEventListener('touchend', e=>{ const s = eligible(e); if(s){ e.preventDefault(); open(s); } }, {capture:true, passive:false});
+  document.addEventListener('keydown', e=>{ const s = eligible(e); if(s && (e.key==='Enter' || e.key===' ' || e.key==='ArrowDown')){ e.preventDefault(); open(s); } if(e.key==='Escape' && sh.classList.contains('on')) close(); }, true);
+  q.addEventListener('input', ()=>render(q.value));
+  bg.addEventListener('click', close); document.getElementById('selSheetClose').addEventListener('click', close);
+  return {open, close, isOpen:()=>sh.classList.contains('on')};
+})();
+
 /* ======================= SAISIE RAPIDE (v36) ======================= */
 const QA = (function(){
   const $ = id=>document.getElementById(id);
@@ -2130,7 +2224,7 @@ const QA = (function(){
     if(mb) mb.addEventListener('click', ()=>{ const o = picker.classList.toggle('on'); mb.setAttribute('aria-expanded', o?'true':'false'); mb.textContent = o ? 'Réduire' : 'Autres…'; if(o){ const s = picker.querySelector('.chip.sel'); if(s) s.scrollIntoView({block:'nearest'}); } });
   }
   function syncChips(container, select){ container.querySelectorAll('.chip').forEach(b=>b.classList.toggle('sel', b.dataset.v===select.value)); }
-  function syncAll(select){ document.querySelectorAll('#'+select.id.replace('Categorie','').replace('Source','')+'Chips, #'+select.id.replace('Categorie','').replace('Source','')+'Picker').forEach(c=>syncChips(c, select)); const p = $('qaPicked'); if(select.id==='qaCategorie' && p){ const c = getAllCategories().find(x=>x[0]===select.value); p.innerHTML = c ? `Catégorie : <b>${escapeHtml(c[0])}</b> · ${GROUP_LABEL[c[1]]||c[1]}` : ''; } }
+  function syncAll(select){ const base = select.id==='qaMode' ? 'qaMode' : select.id.replace('Categorie','').replace('Source',''); document.querySelectorAll('#'+base+'Chips, #'+base+'Picker').forEach(c=>syncChips(c, select)); const p = $('qaPicked'); if(select.id==='qaCategorie' && p){ const c = getAllCategories().find(x=>x[0]===select.value); p.innerHTML = c ? `Catégorie : <b>${escapeHtml(c[0])}</b> · ${GROUP_LABEL[c[1]]||c[1]}` : ''; } }
   // Sélecteur complet, groupé par bloc (catégories) ou simple liste (sources), en pastilles dans la feuille : pas de liste native Android
   function buildPicker(picker, groups, select, onPick){
     picker.innerHTML = groups.map(g=>`<div class="grp">${g.label}</div><div class="chips">${g.items.map(v=>`<button type="button" class="chip${select.value===v?' sel':''}" role="option" aria-selected="${select.value===v}" data-v="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div>`).join('');
@@ -2144,7 +2238,10 @@ const QA = (function(){
     const other = getAllCategories().filter(c=>!order.includes(c[1])).map(c=>c[0]); if(other.length) groups.push({label:'Autres', items: other});
     buildPicker($('qaPicker'), groups, sel); $('qaPicker').classList.remove('on');
     chips($('qaChips'), fc, sel, null, $('qaPicker')); syncAll(sel);
-    $('qaMontant').value = ''; $('qaDescription').value = ''; $('qaDate').value = localISO(); $('qaMode').value = lastMode; $('qaDepErr').textContent = '';
+    const lastTx = (state.transactions||[]).slice().sort((x,y)=>String(y.id).localeCompare(String(x.id)))[0];
+    const ms = $('qaMode'); if(lastTx && lastTx.mode && [...ms.options].some(o=>o.value===lastTx.mode)) lastMode = lastTx.mode;
+    $('qaMontant').value = ''; $('qaDescription').value = ''; $('qaDate').value = localISO(); ms.value = lastMode; $('qaDepErr').textContent = '';
+    chips($('qaModeChips'), [...ms.options].map(o=>o.value), ms);
     open('sheetDep'); setTimeout(()=>$('qaMontant').focus(), 80);
   }
   function revKey(){ return $('qrAnnee').value+'-'+pad2($('qrMois').value); }
